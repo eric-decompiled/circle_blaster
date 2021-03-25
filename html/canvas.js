@@ -262,6 +262,9 @@ class Enemy {
 
             this.x = this.center.x + Math.cos(this.radians) * this.spinRadius
             this.y = this.center.y + Math.sin(this.radians) * this.spinRadius
+        } else {
+            this.x += this.velocity.x * this.baseSpeed
+            this.y += this.velocity.y * this.baseSpeed
         }
 
     }
