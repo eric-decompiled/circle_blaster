@@ -6,14 +6,16 @@
   "scripts": {
     "dev": "webpack --config webpack.config.js",
     "start": "webpack --config webpack.config.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack --config webpack.prod.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "gsap": "^3.6.0",
-    "tailwindcss": "^2.0.4"
+    "tailwindcss": "^2.0.4",
+    "webpack-merge": "^5.7.3"
   },
   "devDependencies": {
     "@babel/core": "^7.9.0",
