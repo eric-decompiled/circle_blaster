@@ -5507,22 +5507,36 @@ var scoreEl = document.querySelector('#scoreEl');
 var levelEl = document.querySelector('#levelEl');
 var modalEl = document.querySelector('#modalEl');
 var bigScoreEl = document.querySelector('#bigScoreEl');
+var comboContainer = document.querySelector('#comboContainer');
+var comboEl = document.querySelector('#comboEl');
 var startGameBtn = document.querySelector('#startGameBtn');
 var startGameAudio = new Audio('./audio/start.mp3');
-var endGameAudio = new Audio('./audio/end.mp3');
+var endGameAudio = new Audio('./audio/glitch.mp3');
+endGameAudio.currentTime = 2;
 var shootAudio = new Audio('./audio/shoot.mp3');
 var enemyHitAudio = new Audio('./audio/hit.mp3');
 var explodeEnemyAudio = new Audio('./audio/explode.mp3');
 var obtainPowerupAudio = new Audio('./audio/powerup.mp3');
 var backgroundMusic = new Audio('./audio/background.mp3');
 var alternateMusic = new Audio('./audio/alternate.mp3');
-var bossMusic = new Audio('./audio/boss.mp3');
+alternateMusic.volume = 0.50;
+var bossMusic = new Audio('./audio/altBoss.mp3');
+bossMusic.loop = true;
+var alarmAudio = new Audio('./audio/warning.mp3');
+alternateMusic.loop = true;
 backgroundMusic.loop = true;
 var powerUpImg = new Image();
 powerUpImg.src = './img/lightning.png';
+
+Array.prototype.random = function () {
+  return this[Math.floor(Math.random() * this.length)];
+};
+
+var enemyColors = ["hsl(0, 50%, 50%)", "hsl(72, 50%, 50%)", "hsl(144, 50%, 50%)", "hsl(216, 50%, 50%)"];
 var scene = {
   active: false,
-  midpoint: false
+  boss: false,
+  color: undefined
 };
 var c = canvas.getContext('2d');
 canvas.width = innerWidth;
@@ -5537,6 +5551,7 @@ var backgroundParticles = [];
 var frame = 0;
 var score = 0;
 var level = 1;
+var combo = 0;
 
 var Player = /*#__PURE__*/function () {
   function Player(x, y, radius, color) {
@@ -5745,6 +5760,66 @@ var BackgroundParticle = /*#__PURE__*/function () {
   return BackgroundParticle;
 }();
 
+var Boss = /*#__PURE__*/function () {
+  function Boss(x, y) {
+    _classCallCheck(this, Boss);
+
+    this.x = x;
+    this.y = y;
+    this.health = 1000;
+    this.hsl = {
+      h: 0,
+      s: 50,
+      l: 50
+    };
+    this.radius = 250;
+    this.baseSpeed = 1.2;
+    this.bounsPoints = 10000;
+  }
+
+  _createClass(Boss, [{
+    key: "draw",
+    value: function draw() {
+      c.beginPath();
+      c.arc(this.x, this.y, this.radius, 0, Math.PI, false);
+      c.fillStyle = this.color;
+      c.fill();
+      c.stroke();
+      c.beginPath();
+      c.arc(this.x, this.y, this.radius, 0, Math.PI, true);
+      c.fillStyle = "hsl(deg, 50%, 50%)";
+      c.fill();
+    }
+  }, {
+    key: "update",
+    value: function update() {
+      this.draw();
+      var h = frame % 360;
+      var s = frame % 20 + 40;
+      this.color = "hsl(".concat(h, "deg,").concat(s, "%,50%)");
+      var angle = Math.atan2(player.y - this.y, player.x - this.x);
+      this.velocity = {
+        x: Math.cos(angle) * this.baseSpeed,
+        y: Math.sin(angle) * this.baseSpeed
+      };
+      this.x += this.velocity.x;
+      this.y += this.velocity.y;
+
+      if (frame % 500 === 0) {
+        spawnEnemy(Math.floor(Math.random() * 4) + 4);
+      }
+    }
+  }, {
+    key: "hit",
+    value: function hit(amount) {
+      this.radius -= 1;
+      this.health -= amount;
+    }
+  }]);
+
+  return Boss;
+}();
+
 var Enemy = /*#__PURE__*/function () {
   function Enemy(x, y, radius, color, velocity, level) {
     _classCallCheck(this, Enemy);
@@ -5752,7 +5827,7 @@ var Enemy = /*#__PURE__*/function () {
     this.x = x;
     this.y = y;
     this.level = level;
-    this.bounsPoints = 0;
+    this.bounsPoints = level * 50;
     this.radius = radius + level * 10;
     this.spinRadius = Math.random() * 40;
     this.spinRate = 0.05;
@@ -5771,10 +5846,10 @@ var Enemy = /*#__PURE__*/function () {
 
       if (Math.random() < 0.25) {
         this.type = 'spinning';
+        this.bounsPoints += 50;
 
         if (Math.random() < 0.3) {
           this.type = 'homingSpinning';
-          this.bounsPoints += 250;
         }
       }
     }
@@ -5824,15 +5899,40 @@ var Enemy = /*#__PURE__*/function () {
         this.y = this.center.y + Math.sin(this.radians) * this.spinRadius;
       }
     }
+  }, {
+    key: "hit",
+    value: function hit(amount) {
+      gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(this, {
+        radius: this.radius - amount
+      });
+    }
   }]);
 
   return Enemy;
 }();
 
 function init() {
+  combo = 0;
   frame = 0;
   level = 1;
+  endGameAudio.pause();
+  endGameAudio.currentTime = 2;
+  gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(bossMusic, {
+    volume: 0,
+    duration: 2,
+    onComplete: function onComplete() {
+      bossMusic.pause();
+      bossMusic.currentTime = 0;
+      bossMusic.volume = 1;
+      console.log('shutdown boss');
+    }
+  });
+  alternateMusic.currentTime = 0;
+  alternateMusic.volume = 0.5;
+  alternateMusic.play();
+  scene.boss = false;
   levelEl.innerHTML = level;
+  comboContainer.style.display = 'none';
   player = new Player(canvas.width / 2, canvas.height / 2, 10, 'white');
   projectiles = [];
   particles = [];
@@ -5857,8 +5957,8 @@ function createScoreLabel(projectile, score) {
   scoreLabel.style.position = 'absolute';
   scoreLabel.style.color = 'white';
   scoreLabel.style.userSelect = 'none';
-  scoreLabel.style.right = projectile.x;
-  scoreLabel.style.bottom = projectile.y;
+  scoreLabel.style.left = projectile.x + 'px';
+  scoreLabel.style.top = projectile.y + 'px';
   document.body.appendChild(scoreLabel);
   gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(scoreLabel, {
     opacity: 0,
@@ -5888,8 +5988,49 @@ function spawnEnemy(level) {
     x: Math.cos(angle),
     y: Math.sin(angle)
   };
-  var color = "hsl(".concat(Math.random() * 360, ", 50%, 50%");
+  var color = enemyColors.random();
   enemies.push(new Enemy(x, y, radius, color, velocity, level));
+}
+
+function spawnBoss() {
+  scene.boss = true;
+  gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(alternateMusic, {
+    volume: 0,
+    duration: 6,
+    onComplete: function onComplete() {
+      alternateMusic.currentTime = 0;
+      alternateMusic.pause();
+    }
+  });
+  setTimeout(function () {
+    return alarmAudio.play();
+  }, 2000);
+  setTimeout(function () {
+    gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(alarmAudio.play(), {
+      volume: 0,
+      duration: 4,
+      onComplete: function onComplete() {
+        alarmAudio.pause();
+        alarmAudio.currentTime = 2;
+        alarmAudio.volume = 1;
+      }
+    });
+  }, 6000);
+  setTimeout(function () {
+    return bossMusic.play();
+  }, 10000);
+  var x;
+  var y;
+
+  if (Math.random() < 0.5) {
+    x = Math.random() < 0.5 ? 0 - 1000 : canvas.width + 1000;
+    y = Math.random() * canvas.height;
+  } else {
+    x = Math.random() * canvas.height;
+    y = Math.random() < 0.5 ? 0 - 1000 : canvas.height;
+  }
+
+  enemies.push(new Boss(x, y));
 }
 
 function spawnPowerups() {
@@ -5914,24 +6055,9 @@ function spawnPowerups() {
 
 function animate() {
   animationId = requestAnimationFrame(animate);
-  frame++; // if (!scene.midpoint && level > 1) {
-  //     scene.midpoint = true
-  //     gsap.to(alternateMusic, {
-  //         volume: 0,
-  //         duration: 8,
-  //         onComplete: () => {
-  //             alternateMusic.pause()
-  //         }
-  //     })
-  //     backgroundMusic.play()
-  //     backgroundMusic.volume = 0
-  //     gsap.to(backgroundMusic, {
-  //         volume: 1.0,
-  //         duration: 8
-  //     })
-  // }
+  frame++;
 
-  if (frame % 250 === 0) {
+  if (frame % 250 === 0 && !scene.boss) {
     if (score > 500) level = 2;
     if (score > 20000) level = 3;
     if (score > 50000) level = 4;
@@ -5940,7 +6066,7 @@ function animate() {
     if (score > 1000000) level = 7;
     levelEl.innerHTML = level;
     spawnEnemy(1);
-    if (level > 1) spawnEnemy(1);
+    if (level > 0) spawnBoss();
     if (level > 2) spawnEnemy(2);
     if (level > 3) spawnEnemy(3);
     if (level > 4 && frame % 500 === 0) spawnEnemy(3);
@@ -6045,16 +6171,28 @@ function animate() {
           score += 100;
           scoreEl.innerHTML = score;
           createScoreLabel(projectile, 100);
-          gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(enemy, {
-            radius: enemy.radius - player.power
-          });
+          enemy.hit(player.power);
           setTimeout(function () {
             projectiles.splice(projectileIndex, 1);
           }, 0);
         } else {
           explodeEnemyAudio.cloneNode().play();
           var points = 250 + enemy.bounsPoints;
-          if (points === 1) console.log(enemy);
+
+          if (enemy.color === scene.color) {
+            combo += 1;
+          } else {
+            scene.color = enemy.color;
+            combo = 0; // omboContainer.style.display = 'none'
+          }
+
+          if (combo >= 3) {
+            var multiplier = 1 + combo / 10;
+            points = Math.floor(points * multiplier);
+            comboContainer.style.display = 'inline';
+            comboEl.innerHTML = combo;
+          }
+
           score += points;
           scoreEl.innerHTML = score;
           createScoreLabel(projectile, points);

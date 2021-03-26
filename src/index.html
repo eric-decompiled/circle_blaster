@@ -18,8 +18,13 @@
 </head>
 
 <body>
-  <div class="p-1 fixed text-white text-sm ml-2 select-none"><span>Score: </span><span id="scoreEl">0</span></div>
-  <div class="p-1 text-white text-sm ml-2 select-none float-right mr-1"><span>Level: </span><span id="levelEl">1</span>
+  <div class="flex justify-between">
+    <div class="p-2 text-white text-sm ml-2 select-none"><span>Score: </span><span id="scoreEl">0</span></div>
+    <div id="comboContainer" class="hidden p-1 text-white ml-2 select-none mr-1">
+      <span>Combo: </span><span id="comboEl">0</span>
+    </div>
+    <div class="p-2 text-white text-sm ml-2 select-none mr-1"><span>Level: </span><span id="levelEl">1</span>
+    </div>
   </div>
   <canvas></canvas>
 
@@ -31,7 +36,8 @@
         <button id="startGameBtn" class="bg-blue-500 text-white w-full py-3 rounded-full text-sm">Start Game</button>
       </div>
       <div class="center font-light text-xs pt-1 mt-2">
-        Arrow keys or WASD to move. Click to shoot. <img src="./img/lightning.png" class="inline object-scale-down max-h-3" /> for machine gun.
+        Arrow keys or WASD to move. Click to shoot. Collect <img src="./img/lightning.png"
+          class="inline object-scale-down max-h-3" /> for auto fire.
       </div>
     </div>
   </div>

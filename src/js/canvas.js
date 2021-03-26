@@ -4,24 +4,42 @@ const scoreEl = document.querySelector('#scoreEl')
 const levelEl = document.querySelector('#levelEl')
 const modalEl = document.querySelector('#modalEl')
 const bigScoreEl = document.querySelector('#bigScoreEl')
+const comboContainer = document.querySelector('#comboContainer')
+const comboEl = document.querySelector('#comboEl')
 const startGameBtn = document
     .querySelector('#startGameBtn')
 const startGameAudio = new Audio('./audio/start.mp3')
-const endGameAudio = new Audio('./audio/end.mp3')
+const endGameAudio = new Audio('./audio/glitch.mp3')
+endGameAudio.currentTime = 2
 const shootAudio = new Audio('./audio/shoot.mp3')
 const enemyHitAudio = new Audio('./audio/hit.mp3')
 const explodeEnemyAudio = new Audio('./audio/explode.mp3')
 const obtainPowerupAudio = new Audio('./audio/powerup.mp3')
 const backgroundMusic = new Audio('./audio/background.mp3')
 const alternateMusic = new Audio('./audio/alternate.mp3')
-const bossMusic = new Audio('./audio/boss.mp3')
+alternateMusic.volume = 0.50
+const bossMusic = new Audio('./audio/altBoss.mp3')
+bossMusic.loop = true
+const alarmAudio = new Audio('./audio/warning.mp3')
+alternateMusic.loop = true
 backgroundMusic.loop = true
 const powerUpImg = new Image()
 powerUpImg.src = './img/lightning.png'
 
+Array.prototype.random = function () {
+    return this[Math.floor((Math.random() * this.length))]
+}
+
+const enemyColors = [
+    `hsl(0, 50%, 50%)`,
+    `hsl(72, 50%, 50%)`,
+    `hsl(144, 50%, 50%)`,
+    `hsl(216, 50%, 50%)`,
+]
 const scene = {
     active: false,
-    midpoint: false
+    boss: false,
+    color: undefined,
 }
 const c = canvas.getContext('2d')
 canvas.width = innerWidth
@@ -36,6 +54,7 @@ let backgroundParticles = []
 let frame = 0
 let score = 0
 let level = 1
+let combo = 0
 
 class Player {
     constructor(x, y, radius, color) {
@@ -200,12 +219,62 @@ class BackgroundParticle {
     }
 }
 
+class Boss {
+    constructor(x, y) {
+        this.x = x
+        this.y = y
+        this.health = 1000
+        this.hsl = {
+            h: 0,
+            s: 50,
+            l: 50,
+        }
+        this.radius = 250
+        this.baseSpeed = 1.2
+        this.bounsPoints = 10000
+    }
+
+    draw() {
+        c.beginPath()
+        c.arc(this.x, this.y, this.radius, 0, Math.PI, false)
+        c.fillStyle = this.color
+        c.fill()
+        c.stroke()
+        c.beginPath()
+        c.arc(this.x, this.y, this.radius, 0, Math.PI, true)
+        c.fillStyle = `hsl(deg, 50%, 50%)`
+        c.fill()
+    }
+
+    update() {
+        this.draw()
+        let h = frame % 360
+        let s = (frame % 20) + 40
+        this.color = `hsl(${h}deg,${s}%,50%)`
+        const angle = Math.atan2(player.y - this.y, player.x - this.x)
+        this.velocity = {
+            x: Math.cos(angle) * this.baseSpeed,
+            y: Math.sin(angle) * this.baseSpeed
+        }
+        this.x += this.velocity.x
+        this.y += this.velocity.y
+        if (frame % 500 === 0) {
+            spawnEnemy((Math.floor(Math.random() * 4) + 4))
+        }
+    }
+
+    hit(amount) {
+        this.radius -= 1
+        this.health -= amount
+    }
+}
+
 class Enemy {
     constructor(x, y, radius, color, velocity, level) {
         this.x = x
         this.y = y
         this.level = level
-        this.bounsPoints = 0
+        this.bounsPoints = level * 50
         this.radius = radius + level * 10
         this.spinRadius = Math.random() * 40
         this.spinRate = 0.05
@@ -220,9 +289,9 @@ class Enemy {
             this.type = 'homing'
             if (Math.random() < 0.25) {
                 this.type = 'spinning'
+                this.bounsPoints += 50
                 if (Math.random() < 0.3) {
                     this.type = 'homingSpinning'
-                    this.bounsPoints += 250
                 }
             }
         }
@@ -267,12 +336,36 @@ class Enemy {
         }
 
     }
+
+    hit(amount) {
+        gsap.to(this, {
+            radius: this.radius - amount
+        })
+    }
 }
 
 function init() {
+    combo = 0
     frame = 0
     level = 1
+    endGameAudio.pause()
+    endGameAudio.currentTime = 2
+    gsap.to(bossMusic, {
+        volume: 0,
+        duration: 2,
+        onComplete: () => {
+            bossMusic.pause()
+            bossMusic.currentTime = 0
+            bossMusic.volume = 1
+            console.log('shutdown boss')
+        }
+    })
+    alternateMusic.currentTime = 0
+    alternateMusic.volume = 0.5
+    alternateMusic.play()
+    scene.boss = false
     levelEl.innerHTML = level
+    comboContainer.style.display = 'none'
     player = new Player(canvas.width / 2, canvas.height / 2, 10, 'white')
     projectiles = []
     particles = []
@@ -295,8 +388,8 @@ function createScoreLabel(projectile, score) {
     scoreLabel.style.position = 'absolute'
     scoreLabel.style.color = 'white'
     scoreLabel.style.userSelect = 'none'
-    scoreLabel.style.right = projectile.x
-    scoreLabel.style.bottom = projectile.y
+    scoreLabel.style.left = projectile.x + 'px'
+    scoreLabel.style.top = projectile.y + 'px'
     document.body.appendChild(scoreLabel)
     gsap.to(scoreLabel, {
         opacity: 0,
@@ -324,8 +417,43 @@ function spawnEnemy(level) {
         x: Math.cos(angle),
         y: Math.sin(angle)
     }
-    const color = `hsl(${Math.random() * 360}, 50%, 50%`
+    const color = enemyColors.random()
     enemies.push(new Enemy(x, y, radius, color, velocity, level))
+}
+
+function spawnBoss() {
+    scene.boss = true
+    gsap.to(alternateMusic, {
+        volume: 0,
+        duration: 6,
+        onComplete: () => {
+            alternateMusic.currentTime = 0
+            alternateMusic.pause()
+        }
+    })
+    setTimeout(() => alarmAudio.play(), 2000)
+    setTimeout(() => {
+        gsap.to(alarmAudio.play(), {
+            volume: 0,
+            duration: 4,
+            onComplete: () => {
+                alarmAudio.pause()
+                alarmAudio.currentTime = 2
+                alarmAudio.volume = 1
+            }
+        })
+    }, 6000)
+    setTimeout(() => bossMusic.play(), 10000)
+    let x
+    let y
+    if (Math.random() < 0.5) {
+        x = Math.random() < 0.5 ? 0 - 1000 : canvas.width + 1000
+        y = Math.random() * canvas.height
+    } else {
+        x = Math.random() * canvas.height
+        y = Math.random() < 0.5 ? 0 - 1000 : canvas.height
+    }
+    enemies.push(new Boss(x, y))
 }
 
 function spawnPowerups() {
@@ -349,23 +477,7 @@ function spawnPowerups() {
 function animate() {
     animationId = requestAnimationFrame(animate)
     frame++
-    // if (!scene.midpoint && level > 1) {
-    //     scene.midpoint = true
-    //     gsap.to(alternateMusic, {
-    //         volume: 0,
-    //         duration: 8,
-    //         onComplete: () => {
-    //             alternateMusic.pause()
-    //         }
-    //     })
-    //     backgroundMusic.play()
-    //     backgroundMusic.volume = 0
-    //     gsap.to(backgroundMusic, {
-    //         volume: 1.0,
-    //         duration: 8
-    //     })
-    // }
-    if (frame % 250 === 0) {
+    if (frame % 250 === 0 && !scene.boss) {
         if (score > 500) level = 2
         if (score > 20000) level = 3
         if (score > 50000) level = 4
@@ -374,14 +486,13 @@ function animate() {
         if (score > 1000000) level = 7
         levelEl.innerHTML = level
         spawnEnemy(1)
-        if (level > 1) spawnEnemy(1)
+        if (level > 0) spawnBoss()
         if (level > 2) spawnEnemy(2)
         if (level > 3) spawnEnemy(3)
         if (level > 4 && frame % 500 === 0) spawnEnemy(3)
         if (level > 5 && frame % 500 === 0) spawnEnemy(4)
         if (level > 6) spawnEnemy(4)
         if (level > 7) spawnEnemy(5)
-
     }
     if (frame % 750 === 0) spawnPowerups()
     c.fillStyle = 'rgba(0, 0, 0, 0.2)'
@@ -480,22 +591,33 @@ function animate() {
                         )
                     )
                 }
+
                 // shrink
                 if (enemy.radius - player.power > 10) {
                     enemyHitAudio.cloneNode().play()
                     score += 100
                     scoreEl.innerHTML = score
                     createScoreLabel(projectile, 100)
-                    gsap.to(enemy, {
-                        radius: enemy.radius - player.power
-                    })
+                    enemy.hit(player.power)
                     setTimeout(() => {
                         projectiles.splice(projectileIndex, 1)
                     }, 0)
                 } else {
                     explodeEnemyAudio.cloneNode().play()
                     let points = 250 + enemy.bounsPoints
-                    if (points === 1) console.log(enemy)
+                    if (enemy.color === scene.color) {
+                        combo += 1
+                    } else {
+                        scene.color = enemy.color
+                        combo = 0
+                        // omboContainer.style.display = 'none'
+                    }
+                    if (combo >= 3) {
+                        let multiplier = 1 + combo / 10
+                        points = Math.floor(points * multiplier)
+                        comboContainer.style.display = 'inline'
+                        comboEl.innerHTML = combo
+                    }
                     score += points
                     scoreEl.innerHTML = score
                     createScoreLabel(projectile, points)
