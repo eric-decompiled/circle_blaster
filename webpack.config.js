@@ -3,6 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 module.exports = {
   mode: 'development',
+  devtool: 'inline-source-map',
   entry: './src/js/canvas.js',
   output: {
     path: __dirname + '/dist/',
@@ -11,16 +12,24 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.m?js$/,
-        exclude: /(node_modules|bower_components)/,
+        test: /\.ts?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
         use: {
           loader: 'babel-loader',
           options: {
             presets: ['@babel/preset-env']
           }
         }
-      }
+      },
     ]
+  },
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
   },
   plugins: [
     new BrowserSyncPlugin({
@@ -37,5 +46,4 @@ module.exports = {
     })
   ],
   watch: true,
-  devtool: 'source-map'
 }

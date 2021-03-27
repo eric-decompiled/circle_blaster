@@ -4,6 +4,11 @@ const powerUpImg = new Image()
 powerUpImg.src = './img/lightning.png'
 
 class PowerUp {
+    private x: number
+    private y: number
+    public width: number
+    public height: number
+    private velocity: Velocity
     constructor({ width, height }) {
         if (Math.random() < 0.5) {
             this.x = Math.random() < 0.5 ? 0 - 7 : width - 7
@@ -20,14 +25,13 @@ class PowerUp {
         this.velocity = velocity
         this.width = 14
         this.height = 19
-        this.radians = 0
     }
 
-    draw(c) {
+    draw(c: CanvasRenderingContext2D) {
         c.drawImage(powerUpImg, this.x, this.y, 14, 18)
     }
 
-    update(c) {
+    update(c: CanvasRenderingContext2D) {
         this.draw(c)
         this.x += this.velocity.x
         this.y += this.velocity.y

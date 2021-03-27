@@ -15,10 +15,21 @@ const randomColor = () => {
 }
 
 class Enemy {
-    constructor(width, height, level) {
+    private x: number
+    private y: number
+    private level: number
+    public points: number
+    private type: string
+    private radians: number
+    private center: Velocity // probably need to rename this / new type
+    private baseSpeed: number
+    private radius: number
+    private spinRadius: number
+    private spinRate: number
+    private color: string
+    private velocity: Velocity
+    constructor(width: number, height: number, level: number) {
         const radius = Math.random() * (60 - 10) + 10
-        let x
-        let y
         if (Math.random() < 0.5) {
             this.x = Math.random() < 0.5 ? 0 - radius : width + radius
             this.y = Math.random() * height
@@ -40,7 +51,7 @@ class Enemy {
         this.color = randomColor()
         this.velocity = velocity
         this.type = 'homing'
-        this.center = { x, y }
+        this.center = { x: this.x, y: this.y }
         this.radians = 0
         this.baseSpeed = level * 0.95
 
@@ -53,14 +64,14 @@ class Enemy {
         }
     }
 
-    draw(c) {
+    draw(c: CanvasRenderingContext2D) {
         c.beginPath()
         c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
         c.fillStyle = this.color
         c.fill()
     }
 
-    update(c, targetX, targetY) {
+    update(c: CanvasRenderingContext2D, targetX: number, targetY: number) {
         this.draw(c)
         if (this.type === 'homing') {
             const angle = Math.atan2(targetY - this.y, targetX - this.x)
@@ -86,7 +97,7 @@ class Enemy {
 
     }
 
-    hit(amount) {
+    hit(amount: number) {
         gsap.to(this, {
             radius: this.radius - amount
         })
@@ -94,7 +105,15 @@ class Enemy {
 }
 
 class Boss {
-    constructor(width, height) {
+    private x: number
+    private y: number
+    public points: number
+    private baseSpeed: number
+    private radius: number
+    private color: string
+    private velocity: Velocity
+    private frame: number
+    constructor(width: number, height: number) {
         if (Math.random() < 0.5) {
             this.x = Math.random() < 0.5 ? 0 - 1000 : width + 1000
             this.y = Math.random() * height
@@ -102,19 +121,13 @@ class Boss {
             this.x = Math.random() * height
             this.y = Math.random() < 0.5 ? 0 - 1000 : height
         }
-        this.health = 1000
-        this.hsl = {
-            h: 0,
-            s: 50,
-            l: 50,
-        }
         this.radius = 250
         this.baseSpeed = 1.2
         this.points = 10000
         this.frame = 0
     }
 
-    draw(c) {
+    draw(c: CanvasRenderingContext2D) {
         c.beginPath()
         c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
         c.fillStyle = this.color
@@ -122,7 +135,7 @@ class Boss {
         c.stroke()
     }
 
-    update(c, targetX, targetY) {
+    update(c: CanvasRenderingContext2D, targetX: number, targetY: number) {
         this.draw(c)
         this.frame++
         let h = this.frame % 360
@@ -137,8 +150,7 @@ class Boss {
         this.y += this.velocity.y
     }
 
-    hit(amount) {
+    hit(amount: number) {
         this.radius -= 1
-        this.health -= amount
     }
 }

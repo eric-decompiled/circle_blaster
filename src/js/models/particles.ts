@@ -1,7 +1,14 @@
 export { Particle, BackgroundParticle }
 
 class Particle {
-    constructor(x, y, radius, color, velocity) {
+    private x: number
+    private y: number
+    private radius: number
+    private color: string
+    private velocity: Velocity
+    private alpha: number
+    private friction: number
+    constructor(x: number, y: number, radius: number, color: string, velocity: Velocity) {
         this.x = x
         this.y = y
         this.radius = radius
@@ -11,7 +18,7 @@ class Particle {
         this.friction = 0.99
     }
 
-    draw(c) {
+    draw(c: CanvasRenderingContext2D) {
         c.save()
         c.globalAlpha = this.alpha
         c.beginPath()
@@ -21,7 +28,7 @@ class Particle {
         c.restore()
     }
 
-    update(c) {
+    update(c: CanvasRenderingContext2D) {
         this.velocity.x *= this.friction
         this.velocity.y *= this.friction
         this.x += this.velocity.x
@@ -32,7 +39,14 @@ class Particle {
 }
 
 class BackgroundParticle {
-    constructor(x, y, radius, color) {
+    private x: number
+    private y: number
+    private radius: number
+    private color: string
+    private alpha: number
+    public initialAlpha: number
+    public touched: boolean
+    constructor(x: number, y: number, radius: number, color: string) {
         this.x = x
         this.y = y
         this.radius = radius
@@ -42,7 +56,7 @@ class BackgroundParticle {
         this.touched = false
     }
 
-    draw(c) {
+    draw(c: CanvasRenderingContext2D) {
         c.save()
         c.globalAlpha = this.alpha
         c.beginPath()
@@ -52,7 +66,12 @@ class BackgroundParticle {
         c.restore()
     }
 
-    update(c) {
+    update(c: CanvasRenderingContext2D) {
         this.draw(c)
+    }
+
+    touch() {
+        this.touched = true
+        this.alpha = 0.5
     }
 }

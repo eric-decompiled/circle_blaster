@@ -1,5 +1,5 @@
 import gsap from 'gsap'
-import Player from './models/player'
+import { Player } from './models/player'
 import { Enemy, Boss } from './models/enemies'
 import { PowerUp } from './models/powerups'
 import { Particle, BackgroundParticle } from './models/particles'
