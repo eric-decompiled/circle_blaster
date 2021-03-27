@@ -5511,12 +5511,14 @@ var comboContainer = document.querySelector('#comboContainer');
 var comboEl = document.querySelector('#comboEl');
 var startGameBtn = document.querySelector('#startGameBtn');
 var startGameAudio = new Audio('./audio/start.mp3');
-var endGameAudio = new Audio('./audio/glitch.mp3');
-endGameAudio.currentTime = 2;
-var shootAudio = new Audio('./audio/shoot.mp3');
+var endGameAudio = new Audio('./audio/altEnd.mp3'); // endGameAudio.currentTime = 2
+
+var shootAudio = new Audio('./audio/altShoot.mp3');
 var enemyHitAudio = new Audio('./audio/hit.mp3');
-var explodeEnemyAudio = new Audio('./audio/explode.mp3');
+var comboBreak = new Audio('./audio/destroy.mp3');
+var destroyEnemy = new Audio('./audio/continue.mp3');
 var obtainPowerupAudio = new Audio('./audio/powerup.mp3');
+var unleashedAudio = new Audio('./audio/unlock.mp3');
 var backgroundMusic = new Audio('./audio/background.mp3');
 var alternateMusic = new Audio('./audio/alternate.mp3');
 alternateMusic.volume = 0.50;
@@ -5532,7 +5534,7 @@ Array.prototype.random = function () {
   return this[Math.floor(Math.random() * this.length)];
 };
 
-var enemyColors = ["hsl(0, 50%, 50%)", "hsl(72, 50%, 50%)", "hsl(144, 50%, 50%)", "hsl(216, 50%, 50%)"];
+var enemyColors = ["hsl(0, 50%, 50%)", "hsl(90, 50%, 50%)", "hsl(180, 50%, 50%)", "hsl(270, 50%, 50%)"];
 var scene = {
   active: false,
   boss: false,
@@ -5552,6 +5554,8 @@ var frame = 0;
 var score = 0;
 var level = 1;
 var combo = 0;
+var particleCount;
+var litCount;
 
 var Player = /*#__PURE__*/function () {
   function Player(x, y, radius, color) {
@@ -5562,13 +5566,15 @@ var Player = /*#__PURE__*/function () {
     this.radius = radius;
     this.powerUp = '';
     this.color = color;
-    this.friction = 0.96;
+    this.friction = 0.90;
     this.velocity = {
       x: 0,
       y: 0
     };
-    this.speed = 0.25;
+    this.speed = 1;
+    this.shotSpeed = 6;
     this.power = 15;
+    this.leashed = true;
   }
 
   _createClass(Player, [{
@@ -5587,11 +5593,13 @@ var Player = /*#__PURE__*/function () {
       var color = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'white';
       var angle = Math.atan2(y - this.y, x - this.x);
       var velocity = {
-        x: Math.cos(angle) * 5,
-        y: Math.sin(angle) * 5
+        x: Math.cos(angle) * this.shotSpeed,
+        y: Math.sin(angle) * this.shotSpeed
       };
-      shootAudio.cloneNode().play();
-      var projectile = new Projectile(this.x, this.y, 5, color, velocity);
+      var s = shootAudio.cloneNode();
+      s.volume = 0.4;
+      s.play();
+      var projectile = new Projectile(this.x, this.y, 5, color, velocity, this.power);
       projectiles.push(projectile);
     }
   }, {
@@ -5616,6 +5624,24 @@ var Player = /*#__PURE__*/function () {
       } else {
         this.velocity.y = 0;
       }
+    }
+  }, {
+    key: "unleash",
+    value: function unleash() {
+      this.leashed = false;
+      this.power += 5;
+      this.speed += 0.5;
+      unleashedAudio.cloneNode().play();
+    }
+  }, {
+    key: "leash",
+    value: function leash() {
+      if (!player.leashed) {
+        this.power -= 5;
+        this.speed -= 0.5;
+      }
+
+      this.leashed = true;
     }
   }]);
 
@@ -5657,7 +5683,7 @@ var PowerUp = /*#__PURE__*/function () {
 }();
 
 var Projectile = /*#__PURE__*/function () {
-  function Projectile(x, y, radius, color, velocity) {
+  function Projectile(x, y, radius, color, velocity, power) {
     _classCallCheck(this, Projectile);
 
     this.x = x;
@@ -5665,6 +5691,7 @@ var Projectile = /*#__PURE__*/function () {
     this.radius = radius;
     this.color = color;
     this.velocity = velocity;
+    this.power = power;
   }
 
   _createClass(Projectile, [{
@@ -5737,6 +5764,7 @@ var BackgroundParticle = /*#__PURE__*/function () {
     this.color = color;
     this.alpha = 0.05;
     this.initialAlpha = this.alpha;
+    this.touched = false;
   }
 
   _createClass(BackgroundParticle, [{
@@ -5781,14 +5809,10 @@ var Boss = /*#__PURE__*/function () {
     key: "draw",
     value: function draw() {
       c.beginPath();
-      c.arc(this.x, this.y, this.radius, 0, Math.PI, false);
+      c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
       c.fillStyle = this.color;
       c.fill();
       c.stroke();
-      c.beginPath();
-      c.arc(this.x, this.y, this.radius, 0, Math.PI, true);
-      c.fillStyle = "hsl(deg, 50%, 50%)";
-      c.fill();
     }
   }, {
     key: "update",
@@ -5916,15 +5940,14 @@ function init() {
   frame = 0;
   level = 1;
   endGameAudio.pause();
-  endGameAudio.currentTime = 2;
+  endGameAudio.currentTime = 0;
   gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(bossMusic, {
     volume: 0,
-    duration: 2,
+    duration: 4,
     onComplete: function onComplete() {
       bossMusic.pause();
       bossMusic.currentTime = 0;
-      bossMusic.volume = 1;
-      console.log('shutdown boss');
+      bossMusic.volume = 1.0;
     }
   });
   alternateMusic.currentTime = 0;
@@ -5933,7 +5956,7 @@ function init() {
   scene.boss = false;
   levelEl.innerHTML = level;
   comboContainer.style.display = 'none';
-  player = new Player(canvas.width / 2, canvas.height / 2, 10, 'white');
+  player = new Player(canvas.width / 2, canvas.height / 2, 10, 'ivory');
   projectiles = [];
   particles = [];
   enemies = [];
@@ -5946,9 +5969,12 @@ function init() {
     var yDots = Array(Math.trunc(canvas.height / spacing)).keys();
 
     for (var y in _toConsumableArray(yDots)) {
-      backgroundParticles.push(new BackgroundParticle(x * spacing, y * spacing, 3, 'blue'));
+      backgroundParticles.push(new BackgroundParticle(x * spacing + 30, y * spacing, 3, 'ivory'));
     }
   }
+
+  particleCount = backgroundParticles.length;
+  litCount = 0;
 }
 
 function createScoreLabel(projectile, score) {
@@ -5995,7 +6021,7 @@ function spawnEnemy(level) {
 function spawnBoss() {
   scene.boss = true;
   gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(alternateMusic, {
-    volume: 0,
+    volume: 0.0,
     duration: 6,
     onComplete: function onComplete() {
       alternateMusic.currentTime = 0;
@@ -6007,12 +6033,12 @@ function spawnBoss() {
   }, 2000);
   setTimeout(function () {
     gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(alarmAudio.play(), {
-      volume: 0,
+      volume: 0.0,
       duration: 4,
       onComplete: function onComplete() {
         alarmAudio.pause();
         alarmAudio.currentTime = 2;
-        alarmAudio.volume = 1;
+        alarmAudio.volume = 1.0;
       }
     });
   }, 6000);
@@ -6053,7 +6079,7 @@ function spawnPowerups() {
   powerUps.push(new PowerUp(x, y, velocity));
 }
 
-function animate() {
+function animate(time) {
   animationId = requestAnimationFrame(animate);
   frame++;
 
@@ -6066,9 +6092,9 @@ function animate() {
     if (score > 1000000) level = 7;
     levelEl.innerHTML = level;
     spawnEnemy(1);
-    if (level > 0) spawnBoss();
-    if (level > 2) spawnEnemy(2);
-    if (level > 3) spawnEnemy(3);
+    if (level > 0) spawnEnemy(2);
+    if (level > 2) spawnEnemy(3);
+    if (level > 3) spawnBoss();
     if (level > 4 && frame % 500 === 0) spawnEnemy(3);
     if (level > 5 && frame % 500 === 0) spawnEnemy(4);
     if (level > 6) spawnEnemy(4);
@@ -6080,18 +6106,32 @@ function animate() {
   c.fillRect(0, 0, canvas.width, canvas.height);
   backgroundParticles.forEach(function (p) {
     var dist = Math.hypot(player.x - p.x, player.y - p.y);
-    var hideRadius = 100;
+    var hideRadius = 125;
 
     if (dist < hideRadius) {
       if (dist < 70) {
         p.alpha = 0;
+
+        if (!p.touched) {
+          litCount += 1;
+          p.touched = true;
+          console.log(litCount);
+          console.log(particleCount);
+
+          if (litCount / particleCount > 0.60 && player.leashed) {
+            player.unleash();
+            backgroundParticles.forEach(function (p) {
+              return p.alpha = Math.random();
+            });
+          }
+        }
       } else {
         p.alpha = 0.5;
       }
     } else if (dist >= hideRadius && p.alpha > p.initialAlpha) {
-      p.alpha -= 0.01;
+      p.alpha -= 0.10;
     } else if (p.alpha < p.initialAlpha) {
-      p.alpha += 0.1;
+      p.alpha += 0.25;
     }
 
     p.update();
@@ -6158,57 +6198,66 @@ function animate() {
       var dist = Math.hypot(projectile.x - enemy.x, projectile.y - enemy.y); // when projectile touches an enemy
 
       if (dist - enemy.radius - projectile.radius < 0.25) {
-        for (var i = 0; i < enemy.radius * 2; i++) {
+        for (var i = 0; i < Math.floor(16, enemy.radius); i++) {
           particles.push(new Particle(projectile.x, projectile.y, Math.random() * 2, enemy.color, {
-            x: (Math.random() - 0.5) * Math.random(),
-            y: (Math.random() - 0.5) * Math.random()
+            x: (Math.random() - 0.5) * Math.random() * 3,
+            y: (Math.random() - 0.5) * Math.random() * 3
           }));
         } // shrink
 
 
-        if (enemy.radius - player.power > 10) {
-          enemyHitAudio.cloneNode().play();
+        if (enemy.radius - projectile.power > 10) {
+          var hitSound = enemyHitAudio.cloneNode();
+          hitSound.volume = 0.33;
+          hitSound.play();
           score += 100;
           scoreEl.innerHTML = score;
           createScoreLabel(projectile, 100);
-          enemy.hit(player.power);
+          enemy.hit(projectile.power);
           setTimeout(function () {
             projectiles.splice(projectileIndex, 1);
           }, 0);
         } else {
-          explodeEnemyAudio.cloneNode().play();
+          destroyEnemy.cloneNode().play();
+          var multiplier = 1;
           var points = 250 + enemy.bounsPoints;
 
           if (enemy.color === scene.color) {
             combo += 1;
+
+            if (combo >= 3) {
+              multiplier += combo / 10; // toggle combo display
+            }
           } else {
-            scene.color = enemy.color;
-            combo = 0; // omboContainer.style.display = 'none'
+            combo = 0;
+            comboBreak.cloneNode().play();
+            player.leash();
+            backgroundParticles.forEach(function (p) {
+              p.color = enemy.color;
+              gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(p, {
+                alpha: 0.25,
+                duration: 0.015,
+                onComplete: function onComplete() {
+                  gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(p, {
+                    alpha: p.initialAlpha,
+                    duration: 0.03
+                  });
+                }
+              });
+            });
+            litCount = 0;
+            scene.color = enemy.color; // omboContainer.style.display = 'none'
           }
 
-          if (combo >= 3) {
-            var multiplier = 1 + combo / 10;
-            points = Math.floor(points * multiplier);
-            comboContainer.style.display = 'inline';
-            comboEl.innerHTML = combo;
-          }
-
+          points = Math.floor(points * multiplier);
+          comboContainer.style.display = 'inline';
+          comboEl.innerHTML = combo;
           score += points;
           scoreEl.innerHTML = score;
           createScoreLabel(projectile, points);
-          backgroundParticles.forEach(function (p) {
-            p.color = enemy.color;
-            gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(p, {
-              alpha: 0.25,
-              duration: 0.015,
-              onComplete: function onComplete() {
-                gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(p, {
-                  alpha: p.initialAlpha,
-                  duration: 0.03
-                });
-              }
-            });
-          });
+
+          if (enemy.color !== scene.color) {}
+
           setTimeout(function () {
             var enemyFound = enemies.find(function (enemyValue) {
               return enemyValue === enemy;
@@ -6265,7 +6314,7 @@ var keys = {
   right: false,
   left: false
 };
-startGameBtn.addEventListener('click', function () {
+startGameBtn.addEventListener('click', function (event) {
   score = 0;
   scoreEl.innerHTML = score;
   bigScoreEl.innerHTML = score;
