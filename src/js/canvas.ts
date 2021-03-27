@@ -172,7 +172,7 @@ function animate() {
         projectiles.forEach((projectile, projectileIndex) => {
             const dist = Math.hypot(projectile.x - enemy.x, projectile.y - enemy.y)
             if (dist - enemy.radius - projectile.radius < 0.1 && enemy.radius > 0) {
-                const splashAmount = Math.max(16, enemy.radius / 5)
+                const splashAmount = Math.max(16, enemy.radius / 8)
                 const splashAngle = Math.atan2(projectile.y - enemy.y, projectile.x - enemy.x)
                 hitSplash(projectile, enemy.color, splashAmount, splashAngle)
                 setTimeout(() => projectiles.splice(projectileIndex, 1), 0)
@@ -181,7 +181,7 @@ function animate() {
                     addScore(100, projectile)
                 } else {
                     enemy.color === scene.color ? continueCombo() : breakCombo(enemy)
-                    const splashAmount = Math.max(24, enemy.radius * 2)
+                    const splashAmount = Math.random() * 18 + 6
                     hitSplash(projectile, enemy.color, splashAmount, splashAngle)
                     addScore(enemy.points, projectile)
                     setTimeout(() => {
@@ -288,8 +288,8 @@ function endGame() {
 
 function hitSplash(projectile: Projectile, color: string, amount: number, angle: number) {
     // particles should be bias to break away from enemy
-    const xBias = Math.cos(angle)
-    const yBias = Math.sin(angle)
+    const xBias = Math.cos(angle) * 1.1
+    const yBias = Math.sin(angle) * 1.1
     for (let i = 0; i < amount; i++) {
         particles.push(
             new Particle(

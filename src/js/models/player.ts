@@ -26,7 +26,7 @@ class Player {
         this.radius = radius
         this.powerUp = ''
         this.color = color
-        this.friction = 0.94
+        this.friction = 0.92
         this.velocity = {
             x: 0,
             y: 0
