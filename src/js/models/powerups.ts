@@ -4,8 +4,8 @@ const powerUpImg = new Image()
 powerUpImg.src = './img/lightning.png'
 
 class PowerUp {
-    private x: number
-    private y: number
+    public x: number
+    public y: number
     public width: number
     public height: number
     private velocity: Velocity
@@ -19,8 +19,8 @@ class PowerUp {
         }
         const angle = Math.atan2(height / 2 - this.y, width / 2 - this.x)
         const velocity = {
-            x: Math.cos(angle),
-            y: Math.sin(angle)
+            x: Math.cos(angle) * Math.max(Math.random(), 0.25),
+            y: Math.sin(angle) * Math.max(Math.random(), 0.25)
         }
         this.velocity = velocity
         this.width = 14

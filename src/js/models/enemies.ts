@@ -4,6 +4,8 @@ export {
     Boss
 }
 
+const minEnemySize = 12
+const enemyHitAudio = new Audio('./audio/hit.mp3')
 const enemyColors = [
     `hsl(0, 50%, 50%)`,
     `hsl(90, 50%, 50%)`,
@@ -14,20 +16,23 @@ const randomColor = () => {
     return enemyColors[Math.floor((Math.random() * enemyColors.length))]
 }
 
+let id = 1
 class Enemy {
+    public id: number
     private x: number
     private y: number
-    private level: number
     public points: number
     public radius: number
+    private drawRadius: number
+    public color: string
     private type: string
     private radians: number
     private center: Velocity // probably need to rename this / new type
     private baseSpeed: number
     private spinRadius: number
     private spinRate: number
-    private color: string
     private velocity: Velocity
+    private alpha: number
     constructor(width: number, height: number, level: number) {
         const radius = Math.random() * (60 - 10) + 10
         if (Math.random() < 0.5) {
@@ -43,32 +48,38 @@ class Enemy {
             y: Math.sin(angle)
         }
 
-        this.level = level
+        this.id = id++
         this.points = 200 + level * 50
         this.radius = radius + level * 10
-        this.spinRadius = Math.random() * 40
+        this.drawRadius = this.radius
+        this.spinRadius = Math.max(30, Math.random() * 100)
         this.spinRate = 0.05
         this.color = randomColor()
         this.velocity = velocity
         this.type = 'homing'
         this.center = { x: this.x, y: this.y }
         this.radians = 0
-        this.baseSpeed = level * 0.95
+        this.baseSpeed = level * 0.95 + (Math.random() * 0.35)
+        this.alpha = 1
 
-        if (Math.random() < (0.35 + this.level * 0.1)) {
-            this.type = 'homing'
-            if (Math.random() < 0.25) {
-                this.type = 'spinning'
-                this.points += 50
-            }
+        if (Math.random() < 0.25) {
+            this.type = 'spinning'
+            this.points += 50
         }
     }
 
     draw(c: CanvasRenderingContext2D) {
         c.beginPath()
-        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
+        c.arc(this.x, this.y, this.drawRadius, 0, Math.PI * 2, false)
         c.fillStyle = this.color
-        c.fill()
+        if (this.alpha === 1) {
+            c.fill()
+        } else {
+            c.save()
+            c.globalAlpha = this.alpha
+            c.fill()
+            c.restore()
+        }
     }
 
     update(c: CanvasRenderingContext2D, targetX: number, targetY: number) {
@@ -94,13 +105,26 @@ class Enemy {
             this.x = this.center.x + Math.cos(this.radians) * this.spinRadius
             this.y = this.center.y + Math.sin(this.radians) * this.spinRadius
         }
-
     }
 
-    hit(amount: number) {
-        gsap.to(this, {
-            radius: this.radius - amount
-        })
+    hit(amount: number): boolean {
+        const hitSound = enemyHitAudio.cloneNode() as HTMLAudioElement
+        hitSound.volume = 0.25
+        hitSound.play()
+        this.radius -= amount
+        if (this.radius > minEnemySize) {
+            gsap.to(this, {
+                drawRadius: this.radius,
+                duration: 0.3
+            })
+            return true
+        } else {
+            gsap.to(this, {
+                alpha: 0.0,
+                duration: 0.20
+            })
+            return false
+        }
     }
 }
 
@@ -113,15 +137,17 @@ class Boss {
     private color: string
     private velocity: Velocity
     private frame: number
+    private drawRadius: number
     constructor(width: number, height: number) {
         if (Math.random() < 0.5) {
             this.x = Math.random() < 0.5 ? 0 - 1000 : width + 1000
             this.y = Math.random() * height
         } else {
             this.x = Math.random() * height
-            this.y = Math.random() < 0.5 ? 0 - 1000 : height
+            this.y = Math.random() < 0.5 ? 0 - 1000 : height + 1000
         }
         this.radius = 250
+        this.drawRadius = 250
         this.baseSpeed = 1.2
         this.points = 10000
         this.frame = 0
@@ -129,7 +155,7 @@ class Boss {
 
     draw(c: CanvasRenderingContext2D) {
         c.beginPath()
-        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
+        c.arc(this.x, this.y, this.drawRadius, 0, Math.PI * 2, false)
         c.fillStyle = this.color
         c.fill()
         c.stroke()
@@ -151,6 +177,22 @@ class Boss {
     }
 
     hit(amount: number) {
+        // boss only take one damage
+        const hitSound = enemyHitAudio.cloneNode() as HTMLAudioElement
+        hitSound.volume = 0.25
+        hitSound.play()
         this.radius -= 1
+        if (this.radius > minEnemySize) {
+            gsap.to(this, {
+                drawRadius: this.radius,
+            })
+            return true
+        } else {
+            gsap.to(this, {
+                alpha: 0.0,
+                duration: 0.20
+            })
+            return false
+        }
     }
 }
