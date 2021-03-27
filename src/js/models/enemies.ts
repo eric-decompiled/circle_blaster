@@ -19,11 +19,11 @@ class Enemy {
     private y: number
     private level: number
     public points: number
+    public radius: number
     private type: string
     private radians: number
     private center: Velocity // probably need to rename this / new type
     private baseSpeed: number
-    private radius: number
     private spinRadius: number
     private spinRate: number
     private color: string
@@ -108,8 +108,8 @@ class Boss {
     private x: number
     private y: number
     public points: number
+    public radius: number
     private baseSpeed: number
-    private radius: number
     private color: string
     private velocity: Velocity
     private frame: number

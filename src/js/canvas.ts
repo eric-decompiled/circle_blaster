@@ -7,9 +7,9 @@ import { Particle, BackgroundParticle } from './models/particles'
 const canvas = document.querySelector('canvas')
 const scoreEl = document.querySelector('#scoreEl')
 const levelEl = document.querySelector('#levelEl')
-const modalEl = document.querySelector('#modalEl')
+const modalEl = document.querySelector('#modalEl') as HTMLElement
 const bigScoreEl = document.querySelector('#bigScoreEl')
-const comboContainer = document.querySelector('#comboContainer')
+const comboContainer = document.querySelector('#comboContainer') as HTMLElement
 const comboEl = document.querySelector('#comboEl')
 const startGameBtn = document.querySelector('#startGameBtn')
 const startGameAudio = new Audio('./audio/start.mp3')
@@ -79,7 +79,7 @@ function init() {
     alternateMusic.volume = 0.5
     alternateMusic.play()
     scene.boss = false
-    levelEl.innerHTML = level
+    levelEl.innerHTML = level.toString()
     comboContainer.style.display = 'none'
     player = new Player(canvas, 10, 'ivory')
     projectiles = []
@@ -88,11 +88,9 @@ function init() {
     powerUps = []
     backgroundParticles = []
     let spacing = 30
-    let xDots = Array(Math.trunc(canvas.width / spacing)).keys()
-    for (const x in [...xDots]) {
-        let yDots = Array(Math.trunc(canvas.height / spacing)).keys()
-        for (const y in [...yDots]) {
-            backgroundParticles.push(new BackgroundParticle(x * spacing + 30, y * spacing, 3, 'ivory'))
+    for (var i = spacing/2; i < canvas.width; i += spacing) {
+        for (let j = spacing/2; j < canvas.height; j += spacing) {
+            backgroundParticles.push(new BackgroundParticle(i, j, 3, 'ivory'))
         }
     }
     particleCount = backgroundParticles.length
@@ -137,7 +135,8 @@ function animate() {
     powerUps.forEach((powerUp, index) => {
         const dist = Math.hypot(player.x - powerUp.x, player.y - powerUp.y)
         if (dist - player.radius - powerUp.width / 2 < 1) {
-            obtainPowerupAudio.cloneNode().play()
+            let obtainSound = obtainPowerupAudio.cloneNode() as HTMLAudioElement
+            obtainSound.play()
             player.powerUp = 'Automatic'
             player.color = '#FFF500'
             powerUps.splice(index, 1)
@@ -186,25 +185,27 @@ function animate() {
             if (dist - enemy.radius - projectile.radius < 0.25) {
                 hitSplash(projectile, enemy)
                 if (enemy.radius - projectile.power > 10) {
-                    let hitSound = enemyHitAudio.cloneNode()
+                    let hitSound = enemyHitAudio.cloneNode() as HTMLAudioElement
                     hitSound.volume = 0.33
                     hitSound.play()
                     score += 100
-                    scoreEl.innerHTML = score
+                    scoreEl.innerHTML = score.toString()
                     createScoreLabel(projectile, 100)
                     enemy.hit(projectile.power)
                     setTimeout(() => {
                         projectiles.splice(projectileIndex, 1)
                     }, 0)
                 } else {
-                    destroyEnemy.cloneNode().play()
+                    let destroySound = destroyEnemy.cloneNode() as HTMLAudioElement
+                    destroySound.volume = 0.9
+                    destroySound.play()
                     let multiplier = 1
                     let points = enemy.points
                     if (enemy.color === scene.color) {
                         combo += 1
                         if (combo >= 3) {
                             comboContainer.style.display = 'inline'
-                            comboEl.innerHTML = combo
+                            comboEl.innerHTML = combo.toString()
                             multiplier += combo / 10
                         }
                     } else {
@@ -212,7 +213,7 @@ function animate() {
                     }
                     points = Math.floor(points * multiplier)
                     score += points
-                    scoreEl.innerHTML = score
+                    scoreEl.innerHTML = score.toString()
                     createScoreLabel(projectile, points)
                     setTimeout(() => {
                         const enemyFound = enemies.find(enemyValue => {
@@ -269,8 +270,8 @@ addEventListener('click', (event) => {
 startGameBtn.addEventListener('click', (event) => {
     event.stopPropagation()
     score = 0
-    scoreEl.innerHTML = score
-    bigScoreEl.innerHTML = score
+    scoreEl.innerHTML = score.toString()
+    bigScoreEl.innerHTML = score.toString()
     init()
     animate()
     startGameAudio.play()
@@ -392,7 +393,7 @@ function setLevel(score) {
     if (score > 100000) level = 5
     if (score > 250000) level = 6
     if (score > 1000000) level = 7
-    levelEl.innerHTML = level
+    levelEl.innerHTML = level.toString()
 }
 
 function spawnPowerUp() {
@@ -402,7 +403,7 @@ function spawnPowerUp() {
 function endGame() {
     cancelAnimationFrame(animationId)
     modalEl.style.display = 'flex'
-    bigScoreEl.innerHTML = score
+    bigScoreEl.innerHTML = score.toString()
     endGameAudio.play()
     scene.active = false
     gsap.to('#whiteModalEl', {
@@ -413,7 +414,7 @@ function endGame() {
 }
 
 function hitSplash(projectile, enemy) {
-    for (let i = 0; i < Math.floor(16, enemy.radius); i++) {
+    for (let i = 0; i < Math.max(16, enemy.radius); i++) {
         particles.push(
             new Particle(
                 projectile.x,
@@ -431,7 +432,7 @@ function hitSplash(projectile, enemy) {
 
 function breakCombo(enemy) {
     combo = 0
-    let breakSound = comboBreak.cloneNode()
+    let breakSound = comboBreak.cloneNode() as HTMLAudioElement
     breakSound.volume = 0.75
     breakSound.play()
     player.leash()
