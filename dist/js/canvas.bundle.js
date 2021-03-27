@@ -5483,6 +5483,10 @@ TweenMaxWithCSS = gsapWithCSS.core.Tween;
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var gsap__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! gsap */ "./node_modules/gsap/index.js");
+/* harmony import */ var _models_player__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./models/player */ "./src/js/models/player.js");
+/* harmony import */ var _models_enemies__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./models/enemies */ "./src/js/models/enemies.js");
+/* harmony import */ var _models_powerups__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./models/powerups */ "./src/js/models/powerups.js");
+/* harmony import */ var _models_particles__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./models/particles */ "./src/js/models/particles.js");
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
 
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
@@ -5495,11 +5499,9 @@ function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToAr
 
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
 
 
 var canvas = document.querySelector('canvas');
@@ -5511,14 +5513,11 @@ var comboContainer = document.querySelector('#comboContainer');
 var comboEl = document.querySelector('#comboEl');
 var startGameBtn = document.querySelector('#startGameBtn');
 var startGameAudio = new Audio('./audio/start.mp3');
-var endGameAudio = new Audio('./audio/altEnd.mp3'); // endGameAudio.currentTime = 2
-
-var shootAudio = new Audio('./audio/altShoot.mp3');
+var endGameAudio = new Audio('./audio/altEnd.mp3');
 var enemyHitAudio = new Audio('./audio/hit.mp3');
 var comboBreak = new Audio('./audio/destroy.mp3');
 var destroyEnemy = new Audio('./audio/continue.mp3');
 var obtainPowerupAudio = new Audio('./audio/powerup.mp3');
-var unleashedAudio = new Audio('./audio/unlock.mp3');
 var backgroundMusic = new Audio('./audio/background.mp3');
 var alternateMusic = new Audio('./audio/alternate.mp3');
 alternateMusic.volume = 0.50;
@@ -5527,18 +5526,21 @@ bossMusic.loop = true;
 var alarmAudio = new Audio('./audio/warning.mp3');
 alternateMusic.loop = true;
 backgroundMusic.loop = true;
-var powerUpImg = new Image();
-powerUpImg.src = './img/lightning.png';
-
-Array.prototype.random = function () {
-  return this[Math.floor(Math.random() * this.length)];
-};
-
-var enemyColors = ["hsl(0, 50%, 50%)", "hsl(90, 50%, 50%)", "hsl(180, 50%, 50%)", "hsl(270, 50%, 50%)"];
 var scene = {
   active: false,
   boss: false,
   color: undefined
+};
+var keys = {
+  up: false,
+  down: false,
+  right: false,
+  left: false
+};
+var mouse = {
+  down: false,
+  x: undefined,
+  y: undefined
 };
 var c = canvas.getContext('2d');
 canvas.width = innerWidth;
@@ -5556,384 +5558,6 @@ var level = 1;
 var combo = 0;
 var particleCount;
 var litCount;
-
-var Player = /*#__PURE__*/function () {
-  function Player(x, y, radius, color) {
-    _classCallCheck(this, Player);
-
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.powerUp = '';
-    this.color = color;
-    this.friction = 0.90;
-    this.velocity = {
-      x: 0,
-      y: 0
-    };
-    this.speed = 1;
-    this.shotSpeed = 6;
-    this.power = 15;
-    this.leashed = true;
-  }
-
-  _createClass(Player, [{
-    key: "draw",
-    value: function draw() {
-      c.beginPath();
-      c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-      c.fillStyle = this.color;
-      c.fill();
-    }
-  }, {
-    key: "shoot",
-    value: function shoot(_ref) {
-      var x = _ref.x,
-          y = _ref.y;
-      var color = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'white';
-      var angle = Math.atan2(y - this.y, x - this.x);
-      var velocity = {
-        x: Math.cos(angle) * this.shotSpeed,
-        y: Math.sin(angle) * this.shotSpeed
-      };
-      var s = shootAudio.cloneNode();
-      s.volume = 0.4;
-      s.play();
-      var projectile = new Projectile(this.x, this.y, 5, color, velocity, this.power);
-      projectiles.push(projectile);
-    }
-  }, {
-    key: "update",
-    value: function update() {
-      this.draw();
-      if (keys.up) this.velocity.y -= this.speed;
-      if (keys.down) this.velocity.y += this.speed;
-      if (keys.right) this.velocity.x += this.speed;
-      if (keys.left) this.velocity.x -= this.speed;
-      this.velocity.x *= this.friction;
-      this.velocity.y *= this.friction;
-
-      if (this.x - this.radius + this.velocity.x > 0 && this.x + this.radius + this.velocity.x < canvas.width) {
-        this.x += this.velocity.x;
-      } else {
-        this.velocity.x = 0;
-      }
-
-      if (this.y - this.radius + this.velocity.y > 0 && this.y + this.radius + this.velocity.y < canvas.height) {
-        this.y += this.velocity.y;
-      } else {
-        this.velocity.y = 0;
-      }
-    }
-  }, {
-    key: "unleash",
-    value: function unleash() {
-      this.leashed = false;
-      this.power += 5;
-      this.speed += 0.5;
-      unleashedAudio.cloneNode().play();
-    }
-  }, {
-    key: "leash",
-    value: function leash() {
-      if (!player.leashed) {
-        this.power -= 5;
-        this.speed -= 0.5;
-      }
-
-      this.leashed = true;
-    }
-  }]);
-
-  return Player;
-}();
-
-var PowerUp = /*#__PURE__*/function () {
-  function PowerUp(x, y, velocity) {
-    _classCallCheck(this, PowerUp);
-
-    this.x = x;
-    this.y = y;
-    this.velocity = velocity;
-    this.width = 14;
-    this.height = 19;
-    this.radians = 0;
-  }
-
-  _createClass(PowerUp, [{
-    key: "draw",
-    value: function draw() {
-      c.save(); // rotate effect
-      // c.translate(this.x + this.width / 2, this.y + this.height / 2)
-      // c.rotate(this.radians)
-      // c.translate(-this.x - this.width / 2, -this.y - this.height / 2)
-
-      c.drawImage(powerUpImg, this.x, this.y, 14, 18); // c.restore()
-    }
-  }, {
-    key: "update",
-    value: function update() {
-      this.draw();
-      this.x += this.velocity.x;
-      this.y += this.velocity.y;
-    }
-  }]);
-
-  return PowerUp;
-}();
-
-var Projectile = /*#__PURE__*/function () {
-  function Projectile(x, y, radius, color, velocity, power) {
-    _classCallCheck(this, Projectile);
-
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.color = color;
-    this.velocity = velocity;
-    this.power = power;
-  }
-
-  _createClass(Projectile, [{
-    key: "draw",
-    value: function draw() {
-      c.beginPath();
-      c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-      c.fillStyle = this.color;
-      c.fill();
-      c.restore();
-    }
-  }, {
-    key: "update",
-    value: function update() {
-      this.draw();
-      this.x += this.velocity.x;
-      this.y += this.velocity.y;
-    }
-  }]);
-
-  return Projectile;
-}();
-
-var Particle = /*#__PURE__*/function () {
-  function Particle(x, y, radius, color, velocity) {
-    _classCallCheck(this, Particle);
-
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.color = color;
-    this.velocity = velocity;
-    this.alpha = 1;
-    this.friction = 0.99;
-  }
-
-  _createClass(Particle, [{
-    key: "draw",
-    value: function draw() {
-      c.save();
-      c.globalAlpha = this.alpha;
-      c.beginPath();
-      c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-      c.fillStyle = this.color;
-      c.fill();
-      c.restore();
-    }
-  }, {
-    key: "update",
-    value: function update() {
-      this.velocity.x *= this.friction;
-      this.velocity.y *= this.friction;
-      this.x += this.velocity.x;
-      this.y += this.velocity.y;
-      this.alpha -= 0.01;
-      this.draw();
-    }
-  }]);
-
-  return Particle;
-}();
-
-var BackgroundParticle = /*#__PURE__*/function () {
-  function BackgroundParticle(x, y, radius, color) {
-    _classCallCheck(this, BackgroundParticle);
-
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.color = color;
-    this.alpha = 0.05;
-    this.initialAlpha = this.alpha;
-    this.touched = false;
-  }
-
-  _createClass(BackgroundParticle, [{
-    key: "draw",
-    value: function draw() {
-      c.save();
-      c.globalAlpha = this.alpha;
-      c.beginPath();
-      c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-      c.fillStyle = this.color;
-      c.fill();
-      c.restore();
-    }
-  }, {
-    key: "update",
-    value: function update() {
-      this.draw();
-    }
-  }]);
-
-  return BackgroundParticle;
-}();
-
-var Boss = /*#__PURE__*/function () {
-  function Boss(x, y) {
-    _classCallCheck(this, Boss);
-
-    this.x = x;
-    this.y = y;
-    this.health = 1000;
-    this.hsl = {
-      h: 0,
-      s: 50,
-      l: 50
-    };
-    this.radius = 250;
-    this.baseSpeed = 1.2;
-    this.bounsPoints = 10000;
-  }
-
-  _createClass(Boss, [{
-    key: "draw",
-    value: function draw() {
-      c.beginPath();
-      c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-      c.fillStyle = this.color;
-      c.fill();
-      c.stroke();
-    }
-  }, {
-    key: "update",
-    value: function update() {
-      this.draw();
-      var h = frame % 360;
-      var s = frame % 20 + 40;
-      this.color = "hsl(".concat(h, "deg,").concat(s, "%,50%)");
-      var angle = Math.atan2(player.y - this.y, player.x - this.x);
-      this.velocity = {
-        x: Math.cos(angle) * this.baseSpeed,
-        y: Math.sin(angle) * this.baseSpeed
-      };
-      this.x += this.velocity.x;
-      this.y += this.velocity.y;
-
-      if (frame % 500 === 0) {
-        spawnEnemy(Math.floor(Math.random() * 4) + 4);
-      }
-    }
-  }, {
-    key: "hit",
-    value: function hit(amount) {
-      this.radius -= 1;
-      this.health -= amount;
-    }
-  }]);
-
-  return Boss;
-}();
-
-var Enemy = /*#__PURE__*/function () {
-  function Enemy(x, y, radius, color, velocity, level) {
-    _classCallCheck(this, Enemy);
-
-    this.x = x;
-    this.y = y;
-    this.level = level;
-    this.bounsPoints = level * 50;
-    this.radius = radius + level * 10;
-    this.spinRadius = Math.random() * 40;
-    this.spinRate = 0.05;
-    this.color = color;
-    this.velocity = velocity;
-    this.type = 'linear';
-    this.center = {
-      x: x,
-      y: y
-    };
-    this.radians = 0;
-    this.baseSpeed = level * 0.95;
-
-    if (Math.random() < 0.35 + this.level * 0.1) {
-      this.type = 'homing';
-
-      if (Math.random() < 0.25) {
-        this.type = 'spinning';
-        this.bounsPoints += 50;
-
-        if (Math.random() < 0.3) {
-          this.type = 'homingSpinning';
-        }
-      }
-    }
-
-    this.type = 'homing';
-  }
-
-  _createClass(Enemy, [{
-    key: "draw",
-    value: function draw() {
-      c.beginPath();
-      c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-      c.fillStyle = this.color;
-      c.fill();
-    }
-  }, {
-    key: "update",
-    value: function update() {
-      this.draw();
-
-      if (this.type === 'homing') {
-        var angle = Math.atan2(player.y - this.y, player.x - this.x);
-        this.velocity = {
-          x: Math.cos(angle) * this.baseSpeed,
-          y: Math.sin(angle) * this.baseSpeed
-        };
-        this.x += this.velocity.x;
-        this.y += this.velocity.y;
-      } else if (this.type === 'spinning') {
-        this.radians += this.spinRate;
-        this.x = this.center.x + Math.cos(this.radians) * this.spinRadius;
-        this.y = this.center.y + Math.sin(this.radians) * this.spinRadius;
-        this.center.x += this.velocity.x;
-        this.center.y += this.velocity.y;
-      } else if (this.type === 'homingSpinning') {
-        this.radians += this.spinRate;
-
-        var _angle = Math.atan2(player.y - this.y, player.x - this.x);
-
-        this.velocity = {
-          x: Math.cos(_angle) * this.baseSpeed,
-          y: Math.sin(_angle) * this.baseSpeed
-        };
-        this.center.x += this.velocity.x;
-        this.center.y += this.velocity.y;
-        this.x = this.center.x + Math.cos(this.radians) * this.spinRadius;
-        this.y = this.center.y + Math.sin(this.radians) * this.spinRadius;
-      }
-    }
-  }, {
-    key: "hit",
-    value: function hit(amount) {
-      gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(this, {
-        radius: this.radius - amount
-      });
-    }
-  }]);
-
-  return Enemy;
-}();
 
 function init() {
   combo = 0;
@@ -5956,7 +5580,7 @@ function init() {
   scene.boss = false;
   levelEl.innerHTML = level;
   comboContainer.style.display = 'none';
-  player = new Player(canvas.width / 2, canvas.height / 2, 10, 'ivory');
+  player = new _models_player__WEBPACK_IMPORTED_MODULE_1__["default"](canvas, 10, 'ivory');
   projectiles = [];
   particles = [];
   enemies = [];
@@ -5969,13 +5593,259 @@ function init() {
     var yDots = Array(Math.trunc(canvas.height / spacing)).keys();
 
     for (var y in _toConsumableArray(yDots)) {
-      backgroundParticles.push(new BackgroundParticle(x * spacing + 30, y * spacing, 3, 'ivory'));
+      backgroundParticles.push(new _models_particles__WEBPACK_IMPORTED_MODULE_4__["BackgroundParticle"](x * spacing + 30, y * spacing, 3, 'ivory'));
     }
   }
 
   particleCount = backgroundParticles.length;
   litCount = 0;
 }
+
+function animate() {
+  animationId = requestAnimationFrame(animate);
+  frame++;
+
+  if (frame % 250 === 0) {
+    setLevel(score);
+    spawnEnemies(level);
+  }
+
+  if (frame % 750 === 0) spawnPowerUp();
+  c.fillStyle = 'rgba(0, 0, 0, 0.2)';
+  c.fillRect(0, 0, canvas.width, canvas.height);
+  backgroundParticles.forEach(function (bp) {
+    var dist = Math.hypot(player.x - bp.x, player.y - bp.y);
+    var hideRadius = 125;
+
+    if (dist < hideRadius) {
+      if (dist < 70) {
+        bp.alpha = 0;
+
+        if (!bp.touched) {
+          litCount += 1;
+          bp.touched = true;
+
+          if (litCount / particleCount > 0.50 && player.leashed) {
+            player.unleash();
+            backgroundParticles.forEach(function (bp) {
+              return bp.alpha = Math.random();
+            });
+          }
+        }
+      } else {
+        bp.alpha = 0.5;
+      }
+    } else if (dist >= hideRadius && bp.alpha > bp.initialAlpha) {
+      bp.alpha -= 0.10;
+    } else if (bp.alpha < bp.initialAlpha) {
+      bp.alpha += 0.25;
+    }
+
+    bp.update(c);
+  });
+  player.update(c, keys);
+  powerUps.forEach(function (powerUp, index) {
+    var dist = Math.hypot(player.x - powerUp.x, player.y - powerUp.y);
+
+    if (dist - player.radius - powerUp.width / 2 < 1) {
+      obtainPowerupAudio.cloneNode().play();
+      player.powerUp = 'Automatic';
+      player.color = '#FFF500';
+      powerUps.splice(index, 1);
+      setTimeout(function () {
+        player.powerUp = '';
+        player.color = '#FFF';
+      }, 5000);
+    } else {
+      powerUp.update(c);
+    }
+  });
+  particles.forEach(function (particle, index) {
+    if (particle.alpha <= 0) {
+      particles.splice(index, 1);
+    } else {
+      particle.update(c);
+    }
+  });
+
+  if (player.powerUp === 'Automatic' && mouse.down) {
+    if (frame % 4 === 0) {
+      projectiles.push(player.shoot(mouse));
+    }
+  }
+
+  projectiles.forEach(function (projectile, index) {
+    projectile.update(c); // gc out of bounds projectiles
+
+    if (projectile.x + projectile.radius < 0 || projectile.x - projectile.radius > canvas.width || projectile.y + projectile.radius < 0 || projectile.y - projectile.radius > canvas.height) {
+      setTimeout(function () {
+        return projectiles.splice(index, 1);
+      }, 0);
+    }
+  });
+  enemies.forEach(function (enemy, index) {
+    // pass in player coordinates for homing
+    enemy.update(c, player.x, player.y);
+    var dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+    if (dist - enemy.radius - player.radius < 1) endGame();
+    projectiles.forEach(function (projectile, projectileIndex) {
+      var dist = Math.hypot(projectile.x - enemy.x, projectile.y - enemy.y); // when projectile touches an enemy
+
+      if (dist - enemy.radius - projectile.radius < 0.25) {
+        hitSplash(projectile, enemy);
+
+        if (enemy.radius - projectile.power > 10) {
+          var hitSound = enemyHitAudio.cloneNode();
+          hitSound.volume = 0.33;
+          hitSound.play();
+          score += 100;
+          scoreEl.innerHTML = score;
+          createScoreLabel(projectile, 100);
+          enemy.hit(projectile.power);
+          setTimeout(function () {
+            projectiles.splice(projectileIndex, 1);
+          }, 0);
+        } else {
+          destroyEnemy.cloneNode().play();
+          var multiplier = 1;
+          var points = enemy.points;
+
+          if (enemy.color === scene.color) {
+            combo += 1;
+
+            if (combo >= 3) {
+              comboContainer.style.display = 'inline';
+              comboEl.innerHTML = combo;
+              multiplier += combo / 10;
+            }
+          } else {
+            breakCombo(enemy);
+          }
+
+          points = Math.floor(points * multiplier);
+          score += points;
+          scoreEl.innerHTML = score;
+          createScoreLabel(projectile, points);
+          setTimeout(function () {
+            var enemyFound = enemies.find(function (enemyValue) {
+              return enemyValue === enemy;
+            });
+
+            if (enemyFound) {
+              enemies.splice(index, 1);
+              projectiles.splice(projectileIndex, 1);
+            }
+          });
+        }
+      }
+    });
+  });
+}
+
+addEventListener('mousedown', function (event) {
+  mouse.down = true;
+  mouse.x = event.clientX;
+  mouse.y = event.clientY;
+});
+addEventListener('mousemove', function (event) {
+  mouse.x = event.clientX;
+  mouse.y = event.clientY;
+});
+addEventListener('mouseup', function () {
+  mouse.down = false;
+});
+addEventListener('touchstart', function (event) {
+  mouse.down = true;
+  mouse.x = event.touches[0].clientX;
+  mouse.y = event.touches[0].clientY;
+});
+addEventListener('touchmove', function (event) {
+  mouse.x = event.touches[0].clientX;
+  mouse.y = event.touches[0].clientY;
+});
+addEventListener('touchend', function () {
+  mouse.down = false;
+});
+addEventListener('click', function (event) {
+  mouse.x = event.clientX;
+  mouse.y = event.clientY;
+  if (scene.active) projectiles.push(player.shoot(mouse));
+});
+startGameBtn.addEventListener('click', function (event) {
+  event.stopPropagation();
+  score = 0;
+  scoreEl.innerHTML = score;
+  bigScoreEl.innerHTML = score;
+  init();
+  animate();
+  startGameAudio.play();
+  alternateMusic.play();
+  scene.active = true;
+  gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to('#whiteModalEl', {
+    opacity: 0,
+    scale: 0.75,
+    ease: 'expo',
+    duration: 0.25,
+    onComplete: function onComplete() {
+      modalEl.style.display = 'none';
+    }
+  });
+});
+addEventListener('resize', function () {
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+  init();
+});
+addEventListener('keydown', function (_ref) {
+  var code = _ref.code;
+
+  switch (code) {
+    case 'KeyW':
+    case 'ArrowUp':
+      keys.up = true;
+      break;
+
+    case 'KeyA':
+    case 'ArrowLeft':
+      keys.left = true;
+      break;
+
+    case 'KeyS':
+    case 'ArrowDown':
+      keys.down = true;
+      break;
+
+    case 'KeyD':
+    case 'ArrowRight':
+      keys.right = true;
+      break;
+  }
+});
+addEventListener('keyup', function (_ref2) {
+  var code = _ref2.code;
+
+  switch (code) {
+    case 'KeyW':
+    case 'ArrowUp':
+      keys.up = false;
+      break;
+
+    case 'KeyA':
+    case 'ArrowLeft':
+      keys.left = false;
+      break;
+
+    case 'KeyS':
+    case 'ArrowDown':
+      keys.down = false;
+      break;
+
+    case 'KeyD':
+    case 'ArrowRight':
+      keys.right = false;
+      break;
+  }
+});
 
 function createScoreLabel(projectile, score) {
   var scoreLabel = document.createElement('label');
@@ -5997,25 +5867,7 @@ function createScoreLabel(projectile, score) {
 }
 
 function spawnEnemy(level) {
-  var radius = Math.random() * (60 - 10) + 10;
-  var x;
-  var y;
-
-  if (Math.random() < 0.5) {
-    x = Math.random() < 0.5 ? 0 - radius : canvas.width + radius;
-    y = Math.random() * canvas.height;
-  } else {
-    x = Math.random() * canvas.height;
-    y = Math.random() < 0.5 ? 0 - radius : canvas.height + radius;
-  }
-
-  var angle = Math.atan2(canvas.height / 2 - y, canvas.width / 2 - x);
-  var velocity = {
-    x: Math.cos(angle),
-    y: Math.sin(angle)
-  };
-  var color = enemyColors.random();
-  enemies.push(new Enemy(x, y, radius, color, velocity, level));
+  enemies.push(new _models_enemies__WEBPACK_IMPORTED_MODULE_2__["Enemy"](canvas.width, canvas.height, level));
 }
 
 function spawnBoss() {
@@ -6045,353 +5897,563 @@ function spawnBoss() {
   setTimeout(function () {
     return bossMusic.play();
   }, 10000);
-  var x;
-  var y;
-
-  if (Math.random() < 0.5) {
-    x = Math.random() < 0.5 ? 0 - 1000 : canvas.width + 1000;
-    y = Math.random() * canvas.height;
-  } else {
-    x = Math.random() * canvas.height;
-    y = Math.random() < 0.5 ? 0 - 1000 : canvas.height;
-  }
-
-  enemies.push(new Boss(x, y));
+  enemies.push(new _models_enemies__WEBPACK_IMPORTED_MODULE_2__["Boss"](canvas.width, canvas.height));
 }
 
-function spawnPowerups() {
-  var x;
-  var y;
-
-  if (Math.random() < 0.5) {
-    x = Math.random() < 0.5 ? 0 - 7 : canvas.width - 7;
-    y = Math.random() * canvas.height;
-  } else {
-    x = Math.random() * canvas.height;
-    y = Math.random() < 0.5 ? 0 - 9 : canvas.height - 9;
-  }
-
-  var angle = Math.atan2(canvas.height / 2 - y, canvas.width / 2 - x);
-  var velocity = {
-    x: Math.cos(angle),
-    y: Math.sin(angle)
-  };
-  powerUps.push(new PowerUp(x, y, velocity));
+function spawnEnemies(level) {
+  spawnEnemy(1);
+  if (level > 1) spawnEnemy(2);
+  if (level > 2) spawnEnemy(3);
+  if (level > 3) spawnEnemy(4);
+  if (level > 4 && !scene.boss) spawnBoss();
 }
 
-function animate(time) {
-  animationId = requestAnimationFrame(animate);
-  frame++;
+function setLevel(score) {
+  if (score > 5000) level = 2;
+  if (score > 20000) level = 3;
+  if (score > 30000) level = 4;
+  if (score > 100000) level = 5;
+  if (score > 250000) level = 6;
+  if (score > 1000000) level = 7;
+  levelEl.innerHTML = level;
+}
 
-  if (frame % 250 === 0 && !scene.boss) {
-    if (score > 500) level = 2;
-    if (score > 20000) level = 3;
-    if (score > 50000) level = 4;
-    if (score > 100000) level = 5;
-    if (score > 250000) level = 6;
-    if (score > 1000000) level = 7;
-    levelEl.innerHTML = level;
-    spawnEnemy(1);
-    if (level > 0) spawnEnemy(2);
-    if (level > 2) spawnEnemy(3);
-    if (level > 3) spawnBoss();
-    if (level > 4 && frame % 500 === 0) spawnEnemy(3);
-    if (level > 5 && frame % 500 === 0) spawnEnemy(4);
-    if (level > 6) spawnEnemy(4);
-    if (level > 7) spawnEnemy(5);
+function spawnPowerUp() {
+  powerUps.push(new _models_powerups__WEBPACK_IMPORTED_MODULE_3__["PowerUp"](canvas));
+}
+
+function endGame() {
+  cancelAnimationFrame(animationId);
+  modalEl.style.display = 'flex';
+  bigScoreEl.innerHTML = score;
+  endGameAudio.play();
+  scene.active = false;
+  gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to('#whiteModalEl', {
+    opacity: 1,
+    scale: 1,
+    duration: 0.35
+  });
+}
+
+function hitSplash(projectile, enemy) {
+  for (var i = 0; i < Math.floor(16, enemy.radius); i++) {
+    particles.push(new _models_particles__WEBPACK_IMPORTED_MODULE_4__["Particle"](projectile.x, projectile.y, Math.random() * 2, enemy.color, {
+      x: (Math.random() - 0.5) * Math.random() * 3,
+      y: (Math.random() - 0.5) * Math.random() * 3
+    }));
   }
+}
 
-  if (frame % 750 === 0) spawnPowerups();
-  c.fillStyle = 'rgba(0, 0, 0, 0.2)';
-  c.fillRect(0, 0, canvas.width, canvas.height);
+function breakCombo(enemy) {
+  combo = 0;
+  var breakSound = comboBreak.cloneNode();
+  breakSound.volume = 0.75;
+  breakSound.play();
+  player.leash();
   backgroundParticles.forEach(function (p) {
-    var dist = Math.hypot(player.x - p.x, player.y - p.y);
-    var hideRadius = 125;
-
-    if (dist < hideRadius) {
-      if (dist < 70) {
-        p.alpha = 0;
-
-        if (!p.touched) {
-          litCount += 1;
-          p.touched = true;
-          console.log(litCount);
-          console.log(particleCount);
-
-          if (litCount / particleCount > 0.60 && player.leashed) {
-            player.unleash();
-            backgroundParticles.forEach(function (p) {
-              return p.alpha = Math.random();
-            });
-          }
-        }
-      } else {
-        p.alpha = 0.5;
-      }
-    } else if (dist >= hideRadius && p.alpha > p.initialAlpha) {
-      p.alpha -= 0.10;
-    } else if (p.alpha < p.initialAlpha) {
-      p.alpha += 0.25;
-    }
-
-    p.update();
-  });
-  player.update();
-  powerUps.forEach(function (powerUp, index) {
-    var dist = Math.hypot(player.x - powerUp.x, player.y - powerUp.y);
-
-    if (dist - player.radius - powerUp.width / 2 < 1) {
-      obtainPowerupAudio.cloneNode().play();
-      player.powerUp = 'Automatic';
-      player.color = '#FFF500';
-      powerUps.splice(index, 1);
-      setTimeout(function () {
-        player.powerUp = '';
-        player.color = '#FFF';
-      }, 5000);
-    } else {
-      powerUp.update();
-    }
-  });
-  particles.forEach(function (particle, index) {
-    if (particle.alpha <= 0) {
-      particles.splice(index, 1);
-    } else {
-      particle.update();
-    }
-  });
-
-  if (player.powerUp === 'Automatic' && mouse.down) {
-    if (frame % 4 === 0) {
-      player.shoot(mouse, '#FFF500');
-    }
-  }
-
-  projectiles.forEach(function (projectile, index) {
-    projectile.update(); // gc
-
-    if (projectile.x + projectile.radius < 0 || projectile.x - projectile.radius > canvas.width || projectile.y + projectile.radius < 0 || projectile.y - projectile.radius > canvas.height) {
-      setTimeout(function () {
-        projectiles.splice(index, 1);
-      }, 0);
-    }
-  });
-  enemies.forEach(function (enemy, index) {
-    enemy.update(); // end game
-
-    var dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
-
-    if (dist - enemy.radius - player.radius < 1) {
-      cancelAnimationFrame(animationId);
-      modalEl.style.display = 'flex';
-      bigScoreEl.innerHTML = score;
-      endGameAudio.play();
-      scene.active = false;
-      gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to('#whiteModalEl', {
-        opacity: 1,
-        scale: 1,
-        duration: 0.35
-      });
-    }
-
-    projectiles.forEach(function (projectile, projectileIndex) {
-      var dist = Math.hypot(projectile.x - enemy.x, projectile.y - enemy.y); // when projectile touches an enemy
-
-      if (dist - enemy.radius - projectile.radius < 0.25) {
-        for (var i = 0; i < Math.floor(16, enemy.radius); i++) {
-          particles.push(new Particle(projectile.x, projectile.y, Math.random() * 2, enemy.color, {
-            x: (Math.random() - 0.5) * Math.random() * 3,
-            y: (Math.random() - 0.5) * Math.random() * 3
-          }));
-        } // shrink
-
-
-        if (enemy.radius - projectile.power > 10) {
-          var hitSound = enemyHitAudio.cloneNode();
-          hitSound.volume = 0.33;
-          hitSound.play();
-          score += 100;
-          scoreEl.innerHTML = score;
-          createScoreLabel(projectile, 100);
-          enemy.hit(projectile.power);
-          setTimeout(function () {
-            projectiles.splice(projectileIndex, 1);
-          }, 0);
-        } else {
-          destroyEnemy.cloneNode().play();
-          var multiplier = 1;
-          var points = 250 + enemy.bounsPoints;
-
-          if (enemy.color === scene.color) {
-            combo += 1;
-
-            if (combo >= 3) {
-              multiplier += combo / 10; // toggle combo display
-            }
-          } else {
-            combo = 0;
-            comboBreak.cloneNode().play();
-            player.leash();
-            backgroundParticles.forEach(function (p) {
-              p.color = enemy.color;
-              gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(p, {
-                alpha: 0.25,
-                duration: 0.015,
-                onComplete: function onComplete() {
-                  gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(p, {
-                    alpha: p.initialAlpha,
-                    duration: 0.03
-                  });
-                }
-              });
-            });
-            litCount = 0;
-            scene.color = enemy.color; // omboContainer.style.display = 'none'
-          }
-
-          points = Math.floor(points * multiplier);
-          comboContainer.style.display = 'inline';
-          comboEl.innerHTML = combo;
-          score += points;
-          scoreEl.innerHTML = score;
-          createScoreLabel(projectile, points);
-
-          if (enemy.color !== scene.color) {}
-
-          setTimeout(function () {
-            var enemyFound = enemies.find(function (enemyValue) {
-              return enemyValue === enemy;
-            });
-
-            if (enemyFound) {
-              enemies.splice(index, 1);
-              projectiles.splice(projectileIndex, 1);
-            }
-          });
-        }
+    p.color = enemy.color;
+    gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(p, {
+      alpha: 0.25,
+      duration: 0.015,
+      onComplete: function onComplete() {
+        gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(p, {
+          alpha: p.initialAlpha,
+          duration: 0.03
+        });
       }
     });
   });
+  litCount = 0;
+  scene.color = enemy.color;
+  comboContainer.style.display = 'none';
 }
 
-var mouse = {
-  down: false,
-  x: undefined,
-  y: undefined
+/***/ }),
+
+/***/ "./src/js/models/enemies.js":
+/*!**********************************!*\
+  !*** ./src/js/models/enemies.js ***!
+  \**********************************/
+/*! exports provided: Enemy, Boss */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Enemy", function() { return Enemy; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Boss", function() { return Boss; });
+/* harmony import */ var gsap__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! gsap */ "./node_modules/gsap/index.js");
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+
+
+var enemyColors = ["hsl(0, 50%, 50%)", "hsl(90, 50%, 50%)", "hsl(180, 50%, 50%)", "hsl(270, 50%, 50%)"];
+
+var randomColor = function randomColor() {
+  return enemyColors[Math.floor(Math.random() * enemyColors.length)];
 };
-addEventListener('mousedown', function (event) {
-  mouse.down = true;
-  mouse.x = event.clientX;
-  mouse.y = event.clientY;
-});
-addEventListener('mousemove', function (event) {
-  mouse.x = event.clientX;
-  mouse.y = event.clientY;
-});
-addEventListener('mouseup', function () {
-  mouse.down = false;
-});
-addEventListener('touchstart', function (event) {
-  mouse.down = true;
-  mouse.x = event.touches[0].clientX;
-  mouse.y = event.touches[0].clientY;
-});
-addEventListener('touchmove', function (event) {
-  mouse.x = event.touches[0].clientX;
-  mouse.y = event.touches[0].clientY;
-});
-addEventListener('touchend', function () {
-  mouse.down = false;
-});
-addEventListener('click', function (event) {
-  mouse.x = event.clientX;
-  mouse.y = event.clientY;
-  if (scene.active) player.shoot(mouse, player.color);
-});
-var keys = {
-  up: false,
-  down: false,
-  right: false,
-  left: false
-};
-startGameBtn.addEventListener('click', function (event) {
-  score = 0;
-  scoreEl.innerHTML = score;
-  bigScoreEl.innerHTML = score;
-  init();
-  animate();
-  startGameAudio.play();
-  alternateMusic.play();
-  scene.active = true;
-  gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to('#whiteModalEl', {
-    opacity: 0,
-    scale: 0.75,
-    ease: 'expo',
-    duration: 0.25,
-    onComplete: function onComplete() {
-      modalEl.style.display = 'none';
+
+var Enemy = /*#__PURE__*/function () {
+  function Enemy(width, height, level) {
+    _classCallCheck(this, Enemy);
+
+    var radius = Math.random() * (60 - 10) + 10;
+    var x;
+    var y;
+
+    if (Math.random() < 0.5) {
+      this.x = Math.random() < 0.5 ? 0 - radius : width + radius;
+      this.y = Math.random() * height;
+    } else {
+      this.x = Math.random() * height;
+      this.y = Math.random() < 0.5 ? 0 - radius : height + radius;
     }
-  });
-});
-addEventListener('resize', function () {
-  canvas.width = innerWidth;
-  canvas.height = innerHeight;
-  init();
-});
-addEventListener('keydown', function (_ref2) {
-  var code = _ref2.code;
 
-  switch (code) {
-    case 'KeyW':
-    case 'ArrowUp':
-      keys.up = true; // player.velocity.y -= playAcceleration
+    var angle = Math.atan2(height / 2 - this.y, width / 2 - this.x);
+    var velocity = {
+      x: Math.cos(angle),
+      y: Math.sin(angle)
+    };
+    this.level = level;
+    this.points = 200 + level * 50;
+    this.radius = radius + level * 10;
+    this.spinRadius = Math.random() * 40;
+    this.spinRate = 0.05;
+    this.color = randomColor();
+    this.velocity = velocity;
+    this.type = 'homing';
+    this.center = {
+      x: x,
+      y: y
+    };
+    this.radians = 0;
+    this.baseSpeed = level * 0.95;
 
-      break;
+    if (Math.random() < 0.35 + this.level * 0.1) {
+      this.type = 'homing';
 
-    case 'KeyA':
-    case 'ArrowLeft':
-      keys.left = true; // player.velocity.x -= playAcceleration
-
-      break;
-
-    case 'KeyS':
-    case 'ArrowDown':
-      keys.down = true; // player.velocity.y += playAcceleration
-
-      break;
-
-    case 'KeyD':
-    case 'ArrowRight':
-      keys.right = true; // player.velocity.x += playAcceleration
-
-      break;
+      if (Math.random() < 0.25) {
+        this.type = 'spinning';
+        this.points += 50;
+      }
+    }
   }
-});
-addEventListener('keyup', function (_ref3) {
-  var code = _ref3.code;
 
-  switch (code) {
-    case 'KeyW':
-    case 'ArrowUp':
-      keys.up = false;
-      break;
+  _createClass(Enemy, [{
+    key: "draw",
+    value: function draw(c) {
+      c.beginPath();
+      c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+      c.fillStyle = this.color;
+      c.fill();
+    }
+  }, {
+    key: "update",
+    value: function update(c, targetX, targetY) {
+      this.draw(c);
 
-    case 'KeyA':
-    case 'ArrowLeft':
-      keys.left = false;
-      break;
+      if (this.type === 'homing') {
+        var angle = Math.atan2(targetY - this.y, targetX - this.x);
+        this.velocity = {
+          x: Math.cos(angle) * this.baseSpeed,
+          y: Math.sin(angle) * this.baseSpeed
+        };
+        this.x += this.velocity.x;
+        this.y += this.velocity.y;
+      } else if (this.type === 'spinning') {
+        this.radians += this.spinRate;
 
-    case 'KeyS':
-    case 'ArrowDown':
-      keys.down = false;
-      break;
+        var _angle = Math.atan2(targetY - this.y, targetX - this.x);
 
-    case 'KeyD':
-    case 'ArrowRight':
-      keys.right = false;
-      break;
+        this.velocity = {
+          x: Math.cos(_angle) * this.baseSpeed,
+          y: Math.sin(_angle) * this.baseSpeed
+        };
+        this.center.x += this.velocity.x;
+        this.center.y += this.velocity.y;
+        this.x = this.center.x + Math.cos(this.radians) * this.spinRadius;
+        this.y = this.center.y + Math.sin(this.radians) * this.spinRadius;
+      }
+    }
+  }, {
+    key: "hit",
+    value: function hit(amount) {
+      gsap__WEBPACK_IMPORTED_MODULE_0__["default"].to(this, {
+        radius: this.radius - amount
+      });
+    }
+  }]);
+
+  return Enemy;
+}();
+
+var Boss = /*#__PURE__*/function () {
+  function Boss(width, height) {
+    _classCallCheck(this, Boss);
+
+    if (Math.random() < 0.5) {
+      this.x = Math.random() < 0.5 ? 0 - 1000 : width + 1000;
+      this.y = Math.random() * height;
+    } else {
+      this.x = Math.random() * height;
+      this.y = Math.random() < 0.5 ? 0 - 1000 : height;
+    }
+
+    this.health = 1000;
+    this.hsl = {
+      h: 0,
+      s: 50,
+      l: 50
+    };
+    this.radius = 250;
+    this.baseSpeed = 1.2;
+    this.points = 10000;
+    this.frame = 0;
   }
-});
+
+  _createClass(Boss, [{
+    key: "draw",
+    value: function draw(c) {
+      c.beginPath();
+      c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+      c.fillStyle = this.color;
+      c.fill();
+      c.stroke();
+    }
+  }, {
+    key: "update",
+    value: function update(c, targetX, targetY) {
+      this.draw(c);
+      this.frame++;
+      var h = this.frame % 360;
+      var s = this.frame % 20 + 40;
+      this.color = "hsl(".concat(h, "deg,").concat(s, "%,50%)");
+      var angle = Math.atan2(targetY - this.y, targetX - this.x);
+      this.velocity = {
+        x: Math.cos(angle) * this.baseSpeed,
+        y: Math.sin(angle) * this.baseSpeed
+      };
+      this.x += this.velocity.x;
+      this.y += this.velocity.y;
+    }
+  }, {
+    key: "hit",
+    value: function hit(amount) {
+      this.radius -= 1;
+      this.health -= amount;
+    }
+  }]);
+
+  return Boss;
+}();
+
+/***/ }),
+
+/***/ "./src/js/models/particles.js":
+/*!************************************!*\
+  !*** ./src/js/models/particles.js ***!
+  \************************************/
+/*! exports provided: Particle, BackgroundParticle */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Particle", function() { return Particle; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "BackgroundParticle", function() { return BackgroundParticle; });
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+
+
+var Particle = /*#__PURE__*/function () {
+  function Particle(x, y, radius, color, velocity) {
+    _classCallCheck(this, Particle);
+
+    this.x = x;
+    this.y = y;
+    this.radius = radius;
+    this.color = color;
+    this.velocity = velocity;
+    this.alpha = 1;
+    this.friction = 0.99;
+  }
+
+  _createClass(Particle, [{
+    key: "draw",
+    value: function draw(c) {
+      c.save();
+      c.globalAlpha = this.alpha;
+      c.beginPath();
+      c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+      c.fillStyle = this.color;
+      c.fill();
+      c.restore();
+    }
+  }, {
+    key: "update",
+    value: function update(c) {
+      this.velocity.x *= this.friction;
+      this.velocity.y *= this.friction;
+      this.x += this.velocity.x;
+      this.y += this.velocity.y;
+      this.alpha -= 0.01;
+      this.draw(c);
+    }
+  }]);
+
+  return Particle;
+}();
+
+var BackgroundParticle = /*#__PURE__*/function () {
+  function BackgroundParticle(x, y, radius, color) {
+    _classCallCheck(this, BackgroundParticle);
+
+    this.x = x;
+    this.y = y;
+    this.radius = radius;
+    this.color = color;
+    this.alpha = 0.05;
+    this.initialAlpha = this.alpha;
+    this.touched = false;
+  }
+
+  _createClass(BackgroundParticle, [{
+    key: "draw",
+    value: function draw(c) {
+      c.save();
+      c.globalAlpha = this.alpha;
+      c.beginPath();
+      c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+      c.fillStyle = this.color;
+      c.fill();
+      c.restore();
+    }
+  }, {
+    key: "update",
+    value: function update(c) {
+      this.draw(c);
+    }
+  }]);
+
+  return BackgroundParticle;
+}();
+
+/***/ }),
+
+/***/ "./src/js/models/player.js":
+/*!*********************************!*\
+  !*** ./src/js/models/player.js ***!
+  \*********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Player; });
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var shootAudio = new Audio('./audio/altShoot.mp3');
+var unleashedAudio = new Audio('./audio/unlock.mp3');
+
+var Player = /*#__PURE__*/function () {
+  function Player(canvas, radius, color) {
+    _classCallCheck(this, Player);
+
+    this.x = canvas.width / 2;
+    this.y = canvas.height / 2;
+    this.canvas = canvas;
+    this.radius = radius;
+    this.powerUp = '';
+    this.color = color;
+    this.friction = 0.94;
+    this.velocity = {
+      x: 0,
+      y: 0
+    };
+    this.speed = 0.75;
+    this.shotSpeed = 6;
+    this.power = 15;
+    this.leashed = true;
+  }
+
+  _createClass(Player, [{
+    key: "draw",
+    value: function draw(c) {
+      c.beginPath();
+      c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+      c.fillStyle = this.color;
+      c.fill();
+    }
+  }, {
+    key: "shoot",
+    value: function shoot(_ref) {
+      var x = _ref.x,
+          y = _ref.y;
+      var angle = Math.atan2(y - this.y, x - this.x);
+      var velocity = {
+        x: Math.cos(angle) * this.shotSpeed,
+        y: Math.sin(angle) * this.shotSpeed
+      };
+      var s = shootAudio.cloneNode();
+      s.volume = 0.4;
+      s.play();
+      return new Projectile(this.x, this.y, 5, this.color, velocity, this.power);
+    }
+  }, {
+    key: "update",
+    value: function update(c, keys) {
+      this.draw(c);
+      if (keys.up) this.velocity.y -= this.speed;
+      if (keys.down) this.velocity.y += this.speed;
+      if (keys.right) this.velocity.x += this.speed;
+      if (keys.left) this.velocity.x -= this.speed;
+      this.velocity.x *= this.friction;
+      this.velocity.y *= this.friction;
+
+      if (this.x - this.radius + this.velocity.x > 0 && this.x + this.radius + this.velocity.x < this.canvas.width) {
+        this.x += this.velocity.x;
+      } else {
+        this.velocity.x = 0;
+      }
+
+      if (this.y - this.radius + this.velocity.y > 0 && this.y + this.radius + this.velocity.y < this.canvas.height) {
+        this.y += this.velocity.y;
+      } else {
+        this.velocity.y = 0;
+      }
+    }
+  }, {
+    key: "unleash",
+    value: function unleash() {
+      this.leashed = false;
+      this.power += 5;
+      this.speed += 0.5;
+      unleashedAudio.cloneNode().play();
+    }
+  }, {
+    key: "leash",
+    value: function leash() {
+      if (!this.leashed) {
+        this.power -= 5;
+        this.speed -= 0.5;
+      }
+
+      this.leashed = true;
+    }
+  }]);
+
+  return Player;
+}();
+
+
+
+var Projectile = /*#__PURE__*/function () {
+  function Projectile(x, y, radius, color, velocity, power) {
+    _classCallCheck(this, Projectile);
+
+    this.x = x;
+    this.y = y;
+    this.radius = radius;
+    this.color = color;
+    this.velocity = velocity;
+    this.power = power;
+  }
+
+  _createClass(Projectile, [{
+    key: "draw",
+    value: function draw(c) {
+      c.beginPath();
+      c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+      c.fillStyle = this.color;
+      c.fill();
+      c.restore();
+    }
+  }, {
+    key: "update",
+    value: function update(c) {
+      this.draw(c);
+      this.x += this.velocity.x;
+      this.y += this.velocity.y;
+    }
+  }]);
+
+  return Projectile;
+}();
+
+/***/ }),
+
+/***/ "./src/js/models/powerups.js":
+/*!***********************************!*\
+  !*** ./src/js/models/powerups.js ***!
+  \***********************************/
+/*! exports provided: PowerUp */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "PowerUp", function() { return PowerUp; });
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+
+var powerUpImg = new Image();
+powerUpImg.src = './img/lightning.png';
+
+var PowerUp = /*#__PURE__*/function () {
+  function PowerUp(_ref) {
+    var width = _ref.width,
+        height = _ref.height;
+
+    _classCallCheck(this, PowerUp);
+
+    if (Math.random() < 0.5) {
+      this.x = Math.random() < 0.5 ? 0 - 7 : width - 7;
+      this.y = Math.random() * height;
+    } else {
+      this.x = Math.random() * height;
+      this.y = Math.random() < 0.5 ? 0 - 9 : height - 9;
+    }
+
+    var angle = Math.atan2(height / 2 - this.y, width / 2 - this.x);
+    var velocity = {
+      x: Math.cos(angle),
+      y: Math.sin(angle)
+    };
+    this.velocity = velocity;
+    this.width = 14;
+    this.height = 19;
+    this.radians = 0;
+  }
+
+  _createClass(PowerUp, [{
+    key: "draw",
+    value: function draw(c) {
+      c.drawImage(powerUpImg, this.x, this.y, 14, 18);
+    }
+  }, {
+    key: "update",
+    value: function update(c) {
+      this.draw(c);
+      this.x += this.velocity.x;
+      this.y += this.velocity.y;
+    }
+  }]);
+
+  return PowerUp;
+}();
 
 /***/ })
 

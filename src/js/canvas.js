@@ -1,4 +1,9 @@
 import gsap from 'gsap'
+import Player from './models/player'
+import { Enemy, Boss } from './models/enemies'
+import { PowerUp } from './models/powerups'
+import { Particle, BackgroundParticle } from './models/particles'
+
 const canvas = document.querySelector('canvas')
 const scoreEl = document.querySelector('#scoreEl')
 const levelEl = document.querySelector('#levelEl')
@@ -6,17 +11,13 @@ const modalEl = document.querySelector('#modalEl')
 const bigScoreEl = document.querySelector('#bigScoreEl')
 const comboContainer = document.querySelector('#comboContainer')
 const comboEl = document.querySelector('#comboEl')
-const startGameBtn = document
-    .querySelector('#startGameBtn')
+const startGameBtn = document.querySelector('#startGameBtn')
 const startGameAudio = new Audio('./audio/start.mp3')
 const endGameAudio = new Audio('./audio/altEnd.mp3')
-// endGameAudio.currentTime = 2
-const shootAudio = new Audio('./audio/altShoot.mp3')
 const enemyHitAudio = new Audio('./audio/hit.mp3')
 const comboBreak = new Audio('./audio/destroy.mp3')
 const destroyEnemy = new Audio('./audio/continue.mp3')
 const obtainPowerupAudio = new Audio('./audio/powerup.mp3')
-const unleashedAudio = new Audio('./audio/unlock.mp3')
 const backgroundMusic = new Audio('./audio/background.mp3')
 const alternateMusic = new Audio('./audio/alternate.mp3')
 alternateMusic.volume = 0.50
@@ -25,23 +26,22 @@ bossMusic.loop = true
 const alarmAudio = new Audio('./audio/warning.mp3')
 alternateMusic.loop = true
 backgroundMusic.loop = true
-const powerUpImg = new Image()
-powerUpImg.src = './img/lightning.png'
 
-Array.prototype.random = function () {
-    return this[Math.floor((Math.random() * this.length))]
-}
-
-const enemyColors = [
-    `hsl(0, 50%, 50%)`,
-    `hsl(90, 50%, 50%)`,
-    `hsl(180, 50%, 50%)`,
-    `hsl(270, 50%, 50%)`,
-]
 const scene = {
     active: false,
     boss: false,
     color: undefined,
+}
+const keys = {
+    up: false,
+    down: false,
+    right: false,
+    left: false
+}
+const mouse = {
+    down: false,
+    x: undefined,
+    y: undefined,
 }
 const c = canvas.getContext('2d')
 canvas.width = innerWidth
@@ -59,311 +59,6 @@ let level = 1
 let combo = 0
 let particleCount
 let litCount
-
-class Player {
-    constructor(x, y, radius, color) {
-        this.x = x
-        this.y = y
-        this.radius = radius
-        this.powerUp = ''
-        this.color = color
-        this.friction = 0.90
-        this.velocity = {
-            x: 0,
-            y: 0
-        }
-        this.speed = 1
-        this.shotSpeed = 6
-        this.power = 15
-        this.leashed = true
-    }
-
-    draw() {
-        c.beginPath()
-        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
-        c.fillStyle = this.color
-        c.fill()
-    }
-
-    shoot({ x, y }, color = 'white') {
-        const angle = Math.atan2(y - this.y, x - this.x)
-        const velocity = {
-            x: Math.cos(angle) * this.shotSpeed,
-            y: Math.sin(angle) * this.shotSpeed
-        }
-        let s = shootAudio.cloneNode()
-        s.volume = 0.4
-        s.play()
-        const projectile = new Projectile(this.x, this.y, 5, color, velocity, this.power)
-        projectiles.push(projectile)
-    }
-
-    update() {
-        this.draw()
-        if (keys.up) this.velocity.y -= this.speed
-        if (keys.down) this.velocity.y += this.speed
-        if (keys.right) this.velocity.x += this.speed
-        if (keys.left) this.velocity.x -= this.speed
-        this.velocity.x *= this.friction
-        this.velocity.y *= this.friction
-        if (this.x - this.radius + this.velocity.x > 0 && this.x + this.radius + this.velocity.x < canvas.width) {
-            this.x += this.velocity.x
-        } else {
-            this.velocity.x = 0
-        }
-
-        if (this.y - this.radius + this.velocity.y > 0 && this.y + this.radius + this.velocity.y < canvas.height) {
-            this.y += this.velocity.y
-        } else {
-            this.velocity.y = 0
-        }
-    }
-
-    unleash() {
-        this.leashed = false
-        this.power += 5
-        this.speed += 0.5
-        unleashedAudio.cloneNode().play()
-    }
-
-    leash() {
-        if (!player.leashed) {
-            this.power -= 5
-            this.speed -= 0.5
-        }
-        this.leashed = true
-    }
-}
-
-class PowerUp {
-    constructor(x, y, velocity) {
-        this.x = x
-        this.y = y
-        this.velocity = velocity
-        this.width = 14
-        this.height = 19
-        this.radians = 0
-    }
-
-    draw() {
-        c.save()
-        // rotate effect
-        // c.translate(this.x + this.width / 2, this.y + this.height / 2)
-        // c.rotate(this.radians)
-        // c.translate(-this.x - this.width / 2, -this.y - this.height / 2)
-        c.drawImage(powerUpImg, this.x, this.y, 14, 18)
-        // c.restore()
-    }
-
-    update() {
-        this.draw()
-        this.x += this.velocity.x
-        this.y += this.velocity.y
-    }
-}
-
-class Projectile {
-    constructor(x, y, radius, color, velocity, power) {
-        this.x = x
-        this.y = y
-        this.radius = radius
-        this.color = color
-        this.velocity = velocity
-        this.power = power
-    }
-
-    draw() {
-        c.beginPath()
-        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
-        c.fillStyle = this.color
-        c.fill()
-        c.restore()
-    }
-
-    update() {
-        this.draw()
-        this.x += this.velocity.x
-        this.y += this.velocity.y
-    }
-}
-
-class Particle {
-    constructor(x, y, radius, color, velocity) {
-        this.x = x
-        this.y = y
-        this.radius = radius
-        this.color = color
-        this.velocity = velocity
-        this.alpha = 1
-        this.friction = 0.99
-    }
-
-    draw() {
-        c.save()
-        c.globalAlpha = this.alpha
-        c.beginPath()
-        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
-        c.fillStyle = this.color
-        c.fill()
-        c.restore()
-    }
-
-    update() {
-        this.velocity.x *= this.friction
-        this.velocity.y *= this.friction
-        this.x += this.velocity.x
-        this.y += this.velocity.y
-        this.alpha -= 0.01
-        this.draw()
-    }
-}
-
-class BackgroundParticle {
-    constructor(x, y, radius, color) {
-        this.x = x
-        this.y = y
-        this.radius = radius
-        this.color = color
-        this.alpha = 0.05
-        this.initialAlpha = this.alpha
-        this.touched = false
-    }
-
-    draw() {
-        c.save()
-        c.globalAlpha = this.alpha
-        c.beginPath()
-        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
-        c.fillStyle = this.color
-        c.fill()
-        c.restore()
-    }
-
-    update() {
-        this.draw()
-    }
-}
-
-class Boss {
-    constructor(x, y) {
-        this.x = x
-        this.y = y
-        this.health = 1000
-        this.hsl = {
-            h: 0,
-            s: 50,
-            l: 50,
-        }
-        this.radius = 250
-        this.baseSpeed = 1.2
-        this.bounsPoints = 10000
-    }
-
-    draw() {
-        c.beginPath()
-        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
-        c.fillStyle = this.color
-        c.fill()
-        c.stroke()
-    }
-
-    update() {
-        this.draw()
-        let h = frame % 360
-        let s = (frame % 20) + 40
-        this.color = `hsl(${h}deg,${s}%,50%)`
-        const angle = Math.atan2(player.y - this.y, player.x - this.x)
-        this.velocity = {
-            x: Math.cos(angle) * this.baseSpeed,
-            y: Math.sin(angle) * this.baseSpeed
-        }
-        this.x += this.velocity.x
-        this.y += this.velocity.y
-        if (frame % 500 === 0) {
-            spawnEnemy((Math.floor(Math.random() * 4) + 4))
-        }
-    }
-
-    hit(amount) {
-        this.radius -= 1
-        this.health -= amount
-    }
-}
-
-class Enemy {
-    constructor(x, y, radius, color, velocity, level) {
-        this.x = x
-        this.y = y
-        this.level = level
-        this.bounsPoints = level * 50
-        this.radius = radius + level * 10
-        this.spinRadius = Math.random() * 40
-        this.spinRate = 0.05
-        this.color = color
-        this.velocity = velocity
-        this.type = 'linear'
-        this.center = { x, y }
-        this.radians = 0
-        this.baseSpeed = level * 0.95
-
-        if (Math.random() < (0.35 + this.level * 0.1)) {
-            this.type = 'homing'
-            if (Math.random() < 0.25) {
-                this.type = 'spinning'
-                this.bounsPoints += 50
-                if (Math.random() < 0.3) {
-                    this.type = 'homingSpinning'
-                }
-            }
-        }
-        this.type = 'homing'
-    }
-
-    draw() {
-        c.beginPath()
-        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
-        c.fillStyle = this.color
-        c.fill()
-    }
-
-    update() {
-        this.draw()
-        if (this.type === 'homing') {
-            const angle = Math.atan2(player.y - this.y, player.x - this.x)
-            this.velocity = {
-                x: Math.cos(angle) * this.baseSpeed,
-                y: Math.sin(angle) * this.baseSpeed
-            }
-            this.x += this.velocity.x
-            this.y += this.velocity.y
-        } else if (this.type === 'spinning') {
-            this.radians += this.spinRate
-            this.x = this.center.x + Math.cos(this.radians) * this.spinRadius
-            this.y = this.center.y + Math.sin(this.radians) * this.spinRadius
-            this.center.x += this.velocity.x
-            this.center.y += this.velocity.y
-        } else if (this.type === 'homingSpinning') {
-            this.radians += this.spinRate
-            const angle = Math.atan2(player.y - this.y, player.x - this.x)
-            this.velocity = {
-                x: Math.cos(angle) * this.baseSpeed,
-                y: Math.sin(angle) * this.baseSpeed
-            }
-            this.center.x += this.velocity.x
-            this.center.y += this.velocity.y
-
-            this.x = this.center.x + Math.cos(this.radians) * this.spinRadius
-            this.y = this.center.y + Math.sin(this.radians) * this.spinRadius
-        }
-
-    }
-
-    hit(amount) {
-        gsap.to(this, {
-            radius: this.radius - amount
-        })
-    }
-}
 
 function init() {
     combo = 0
@@ -386,7 +81,7 @@ function init() {
     scene.boss = false
     levelEl.innerHTML = level
     comboContainer.style.display = 'none'
-    player = new Player(canvas.width / 2, canvas.height / 2, 10, 'ivory')
+    player = new Player(canvas, 10, 'ivory')
     projectiles = []
     particles = []
     enemies = []
@@ -397,155 +92,48 @@ function init() {
     for (const x in [...xDots]) {
         let yDots = Array(Math.trunc(canvas.height / spacing)).keys()
         for (const y in [...yDots]) {
-            backgroundParticles.push(new BackgroundParticle(x * spacing+30, y * spacing, 3, 'ivory'))
+            backgroundParticles.push(new BackgroundParticle(x * spacing + 30, y * spacing, 3, 'ivory'))
         }
     }
     particleCount = backgroundParticles.length
     litCount = 0
 }
 
-function createScoreLabel(projectile, score) {
-    const scoreLabel = document.createElement('label')
-    scoreLabel.innerHTML = score
-    scoreLabel.style.position = 'absolute'
-    scoreLabel.style.color = 'white'
-    scoreLabel.style.userSelect = 'none'
-    scoreLabel.style.left = projectile.x + 'px'
-    scoreLabel.style.top = projectile.y + 'px'
-    document.body.appendChild(scoreLabel)
-    gsap.to(scoreLabel, {
-        opacity: 0,
-        y: -50,
-        duration: 1,
-        onComplete: () => {
-            scoreLabel.parentNode.removeChild(scoreLabel)
-        }
-    })
-}
-
-function spawnEnemy(level) {
-    const radius = Math.random() * (60 - 10) + 10
-    let x
-    let y
-    if (Math.random() < 0.5) {
-        x = Math.random() < 0.5 ? 0 - radius : canvas.width + radius
-        y = Math.random() * canvas.height
-    } else {
-        x = Math.random() * canvas.height
-        y = Math.random() < 0.5 ? 0 - radius : canvas.height + radius
-    }
-    const angle = Math.atan2(canvas.height / 2 - y, canvas.width / 2 - x)
-    const velocity = {
-        x: Math.cos(angle),
-        y: Math.sin(angle)
-    }
-    const color = enemyColors.random()
-    enemies.push(new Enemy(x, y, radius, color, velocity, level))
-}
-
-function spawnBoss() {
-    scene.boss = true
-    gsap.to(alternateMusic, {
-        volume: 0.0,
-        duration: 6,
-        onComplete: () => {
-            alternateMusic.currentTime = 0
-            alternateMusic.pause()
-        }
-    })
-    setTimeout(() => alarmAudio.play(), 2000)
-    setTimeout(() => {
-        gsap.to(alarmAudio.play(), {
-            volume: 0.0,
-            duration: 4,
-            onComplete: () => {
-                alarmAudio.pause()
-                alarmAudio.currentTime = 2
-                alarmAudio.volume = 1.0
-            }
-        })
-    }, 6000)
-    setTimeout(() => bossMusic.play(), 10000)
-    let x
-    let y
-    if (Math.random() < 0.5) {
-        x = Math.random() < 0.5 ? 0 - 1000 : canvas.width + 1000
-        y = Math.random() * canvas.height
-    } else {
-        x = Math.random() * canvas.height
-        y = Math.random() < 0.5 ? 0 - 1000 : canvas.height
-    }
-    enemies.push(new Boss(x, y))
-}
-
-function spawnPowerups() {
-    let x
-    let y
-    if (Math.random() < 0.5) {
-        x = Math.random() < 0.5 ? 0 - 7 : canvas.width - 7
-        y = Math.random() * canvas.height
-    } else {
-        x = Math.random() * canvas.height
-        y = Math.random() < 0.5 ? 0 - 9 : canvas.height - 9
-    }
-    const angle = Math.atan2(canvas.height / 2 - y, canvas.width / 2 - x)
-    const velocity = {
-        x: Math.cos(angle),
-        y: Math.sin(angle)
-    }
-    powerUps.push(new PowerUp(x, y, velocity))
-}
-
-function animate(time) {
+function animate() {
     animationId = requestAnimationFrame(animate)
     frame++
-    if (frame % 250 === 0 && !scene.boss) {
-        if (score > 500) level = 2
-        if (score > 20000) level = 3
-        if (score > 50000) level = 4
-        if (score > 100000) level = 5
-        if (score > 250000) level = 6
-        if (score > 1000000) level = 7
-        levelEl.innerHTML = level
-        spawnEnemy(1)
-        if (level > 0) spawnEnemy(2)
-        if (level > 2) spawnEnemy(3)
-        if (level > 3) spawnBoss()
-        if (level > 4 && frame % 500 === 0) spawnEnemy(3)
-        if (level > 5 && frame % 500 === 0) spawnEnemy(4)
-        if (level > 6) spawnEnemy(4)
-        if (level > 7) spawnEnemy(5)
+    if (frame % 250 === 0) {
+        setLevel(score)
+        spawnEnemies(level)
     }
-    if (frame % 750 === 0) spawnPowerups()
+    if (frame % 750 === 0) spawnPowerUp()
     c.fillStyle = 'rgba(0, 0, 0, 0.2)'
     c.fillRect(0, 0, canvas.width, canvas.height)
-    backgroundParticles.forEach(p => {
-        const dist = Math.hypot(player.x - p.x, player.y - p.y)
+    backgroundParticles.forEach(bp => {
+        const dist = Math.hypot(player.x - bp.x, player.y - bp.y)
         const hideRadius = 125
         if (dist < hideRadius) {
             if (dist < 70) {
-                p.alpha = 0
-                if (!p.touched) {
+                bp.alpha = 0
+                if (!bp.touched) {
                     litCount += 1
-                    p.touched = true
-                    console.log(litCount)
-                    console.log(particleCount)
-                    if (litCount / particleCount > 0.60 && player.leashed) {
+                    bp.touched = true
+                    if (litCount / particleCount > 0.50 && player.leashed) {
                         player.unleash()
-                        backgroundParticles.forEach(p => p.alpha = Math.random())
+                        backgroundParticles.forEach(bp => bp.alpha = Math.random())
                     }
                 }
             } else {
-                p.alpha = 0.5
+                bp.alpha = 0.5
             }
-        } else if (dist >= hideRadius && p.alpha > p.initialAlpha) {
-            p.alpha -= 0.10
-        } else if (p.alpha < p.initialAlpha) {
-            p.alpha += 0.25
+        } else if (dist >= hideRadius && bp.alpha > bp.initialAlpha) {
+            bp.alpha -= 0.10
+        } else if (bp.alpha < bp.initialAlpha) {
+            bp.alpha += 0.25
         }
-        p.update()
+        bp.update(c)
     })
-    player.update()
+    player.update(c, keys)
     powerUps.forEach((powerUp, index) => {
         const dist = Math.hypot(player.x - powerUp.x, player.y - powerUp.y)
         if (dist - player.radius - powerUp.width / 2 < 1) {
@@ -558,73 +146,45 @@ function animate(time) {
                 player.color = '#FFF'
             }, 5000)
         } else {
-            powerUp.update()
+            powerUp.update(c)
         }
     })
     particles.forEach((particle, index) => {
         if (particle.alpha <= 0) {
             particles.splice(index, 1)
         } else {
-            particle.update()
+            particle.update(c)
         }
     })
     if (player.powerUp === 'Automatic' && mouse.down) {
         if (frame % 4 === 0) {
-            player.shoot(mouse, '#FFF500')
+            projectiles.push(player.shoot(mouse))
         }
     }
     projectiles.forEach((projectile, index) => {
-        projectile.update()
-        // gc
+        projectile.update(c)
+        // gc out of bounds projectiles
         if (
             projectile.x + projectile.radius < 0 ||
             projectile.x - projectile.radius > canvas.width ||
             projectile.y + projectile.radius < 0 ||
             projectile.y - projectile.radius > canvas.height
         ) {
-            setTimeout(() => {
-                projectiles.splice(index, 1)
-            }, 0)
+            setTimeout(() => projectiles.splice(index, 1), 0)
         }
     })
     enemies.forEach((enemy, index) => {
-        enemy.update()
+        // pass in player coordinates for homing
+        enemy.update(c, player.x, player.y)
 
-        // end game
         const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y)
-        if (dist - enemy.radius - player.radius < 1) {
-            cancelAnimationFrame(animationId)
-            modalEl.style.display = 'flex'
-            bigScoreEl.innerHTML = score
-            endGameAudio.play()
-            scene.active = false
-            gsap.to('#whiteModalEl', {
-                opacity: 1,
-                scale: 1,
-                duration: 0.35,
-            })
-        }
+        if (dist - enemy.radius - player.radius < 1) endGame()
 
         projectiles.forEach((projectile, projectileIndex) => {
             const dist = Math.hypot(projectile.x - enemy.x, projectile.y - enemy.y)
             // when projectile touches an enemy
             if (dist - enemy.radius - projectile.radius < 0.25) {
-                for (let i = 0; i < Math.floor(16, enemy.radius); i++) {
-                    particles.push(
-                        new Particle(
-                            projectile.x,
-                            projectile.y,
-                            Math.random() * 2,
-                            enemy.color,
-                            {
-                                x: (Math.random() - 0.5) * Math.random()*3,
-                                y: (Math.random() - 0.5) * Math.random()*3
-                            }
-                        )
-                    )
-                }
-
-                // shrink
+                hitSplash(projectile, enemy)
                 if (enemy.radius - projectile.power > 10) {
                     let hitSound = enemyHitAudio.cloneNode()
                     hitSound.volume = 0.33
@@ -639,42 +199,21 @@ function animate(time) {
                 } else {
                     destroyEnemy.cloneNode().play()
                     let multiplier = 1
-                    let points = 250 + enemy.bounsPoints
+                    let points = enemy.points
                     if (enemy.color === scene.color) {
                         combo += 1
                         if (combo >= 3) {
+                            comboContainer.style.display = 'inline'
+                            comboEl.innerHTML = combo
                             multiplier += combo / 10
-                            // toggle combo display
                         }
                     } else {
-                        combo = 0
-                        comboBreak.cloneNode().play()
-                        player.leash()
-                        backgroundParticles.forEach(p => {
-                            p.color = enemy.color
-                            gsap.to(p, {
-                                alpha: 0.25,
-                                duration: 0.015,
-                                onComplete: () => {
-                                    gsap.to(p, {
-                                        alpha: p.initialAlpha,
-                                        duration: 0.03
-                                    })
-                                }
-                            })
-                        })
-                        litCount = 0
-                        scene.color = enemy.color
-                        // omboContainer.style.display = 'none'
+                        breakCombo(enemy)
                     }
                     points = Math.floor(points * multiplier)
-                    comboContainer.style.display = 'inline'
-                    comboEl.innerHTML = combo
                     score += points
                     scoreEl.innerHTML = score
                     createScoreLabel(projectile, points)
-                    if (enemy.color !== scene.color) {
-                    }
                     setTimeout(() => {
                         const enemyFound = enemies.find(enemyValue => {
                             return enemyValue === enemy
@@ -690,11 +229,6 @@ function animate(time) {
     })
 }
 
-const mouse = {
-    down: false,
-    x: undefined,
-    y: undefined,
-}
 
 addEventListener('mousedown', (event) => {
     mouse.down = true
@@ -729,16 +263,11 @@ addEventListener('touchend', () => {
 addEventListener('click', (event) => {
     mouse.x = event.clientX
     mouse.y = event.clientY
-    if (scene.active) player.shoot(mouse, player.color)
+    if (scene.active) projectiles.push(player.shoot(mouse))
 })
 
-const keys = {
-    up: false,
-    down: false,
-    right: false,
-    left: false
-}
 startGameBtn.addEventListener('click', (event) => {
+    event.stopPropagation()
     score = 0
     scoreEl.innerHTML = score
     bigScoreEl.innerHTML = score
@@ -768,19 +297,15 @@ addEventListener('keydown', ({ code }) => {
     switch (code) {
         case 'KeyW': case 'ArrowUp':
             keys.up = true
-            // player.velocity.y -= playAcceleration
             break
         case 'KeyA': case 'ArrowLeft':
             keys.left = true
-            // player.velocity.x -= playAcceleration
             break
         case 'KeyS': case 'ArrowDown':
             keys.down = true
-            // player.velocity.y += playAcceleration
             break
         case 'KeyD': case 'ArrowRight':
             keys.right = true
-            // player.velocity.x += playAcceleration
             break
     }
 })
@@ -801,3 +326,129 @@ addEventListener('keyup', ({ code }) => {
             break
     }
 })
+
+function createScoreLabel(projectile, score) {
+    const scoreLabel = document.createElement('label')
+    scoreLabel.innerHTML = score
+    scoreLabel.style.position = 'absolute'
+    scoreLabel.style.color = 'white'
+    scoreLabel.style.userSelect = 'none'
+    scoreLabel.style.left = projectile.x + 'px'
+    scoreLabel.style.top = projectile.y + 'px'
+    document.body.appendChild(scoreLabel)
+    gsap.to(scoreLabel, {
+        opacity: 0,
+        y: -50,
+        duration: 1,
+        onComplete: () => {
+            scoreLabel.parentNode.removeChild(scoreLabel)
+        }
+    })
+}
+
+function spawnEnemy(level) {
+    enemies.push(new Enemy(canvas.width, canvas.height, level))
+}
+
+function spawnBoss() {
+    scene.boss = true
+    gsap.to(alternateMusic, {
+        volume: 0.0,
+        duration: 6,
+        onComplete: () => {
+            alternateMusic.currentTime = 0
+            alternateMusic.pause()
+        }
+    })
+    setTimeout(() => alarmAudio.play(), 2000)
+    setTimeout(() => {
+        gsap.to(alarmAudio.play(), {
+            volume: 0.0,
+            duration: 4,
+            onComplete: () => {
+                alarmAudio.pause()
+                alarmAudio.currentTime = 2
+                alarmAudio.volume = 1.0
+            }
+        })
+    }, 6000)
+    setTimeout(() => bossMusic.play(), 10000)
+    enemies.push(new Boss(canvas.width, canvas.height))
+}
+
+function spawnEnemies(level) {
+    spawnEnemy(1)
+    if (level > 1) spawnEnemy(2)
+    if (level > 2) spawnEnemy(3)
+    if (level > 3) spawnEnemy(4)
+    if (level > 4 && !scene.boss) spawnBoss()
+}
+
+
+function setLevel(score) {
+    if (score > 5000) level = 2
+    if (score > 20000) level = 3
+    if (score > 30000) level = 4
+    if (score > 100000) level = 5
+    if (score > 250000) level = 6
+    if (score > 1000000) level = 7
+    levelEl.innerHTML = level
+}
+
+function spawnPowerUp() {
+    powerUps.push(new PowerUp(canvas))
+}
+
+function endGame() {
+    cancelAnimationFrame(animationId)
+    modalEl.style.display = 'flex'
+    bigScoreEl.innerHTML = score
+    endGameAudio.play()
+    scene.active = false
+    gsap.to('#whiteModalEl', {
+        opacity: 1,
+        scale: 1,
+        duration: 0.35,
+    })
+}
+
+function hitSplash(projectile, enemy) {
+    for (let i = 0; i < Math.floor(16, enemy.radius); i++) {
+        particles.push(
+            new Particle(
+                projectile.x,
+                projectile.y,
+                Math.random() * 2,
+                enemy.color,
+                {
+                    x: (Math.random() - 0.5) * Math.random() * 3,
+                    y: (Math.random() - 0.5) * Math.random() * 3
+                }
+            )
+        )
+    }
+}
+
+function breakCombo(enemy) {
+    combo = 0
+    let breakSound = comboBreak.cloneNode()
+    breakSound.volume = 0.75
+    breakSound.play()
+    player.leash()
+    backgroundParticles.forEach(p => {
+        p.color = enemy.color
+        gsap.to(p, {
+            alpha: 0.25,
+            duration: 0.015,
+            onComplete: () => {
+                gsap.to(p, {
+                    alpha: p.initialAlpha,
+                    duration: 0.03
+                })
+            }
+        })
+    })
+    litCount = 0
+    scene.color = enemy.color
+    comboContainer.style.display = 'none'
+}
