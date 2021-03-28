@@ -7,10 +7,10 @@ export {
 const minEnemySize = 12
 const enemyHitAudio = new Audio('./audio/hit.mp3')
 const enemyColors = [
-    `hsl(0, 50%, 50%)`,
-    `hsl(90, 50%, 50%)`,
-    `hsl(180, 50%, 50%)`,
-    `hsl(270, 50%, 50%)`,
+    `hsl(0, 70%, 30%)`,
+    `hsl(90, 70%, 30%)`,
+    `hsl(220, 70%, 30%)`,
+    `hsl(36, 90%, 30%)`
 ]
 const randomColor = () => {
     return enemyColors[Math.floor((Math.random() * enemyColors.length))]

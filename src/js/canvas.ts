@@ -9,7 +9,6 @@ const scoreEl = document.querySelector('#scoreEl')
 const levelEl = document.querySelector('#levelEl')
 const modalEl = document.querySelector('#modalEl') as HTMLElement
 const bigScoreEl = document.querySelector('#bigScoreEl')
-const comboContainer = document.querySelector('#comboContainer') as HTMLElement
 const comboEl = document.querySelector('#comboEl')
 const startGameBtn = document.querySelector('#startGameBtn')
 const startGameAudio = new Audio('./audio/start.mp3')
@@ -79,7 +78,6 @@ function init() {
     backgroundMusic.play()
     scene.boss = false
     levelEl.innerHTML = level.toString()
-    comboContainer.style.display = 'none'
     player = new Player(canvas, 10, 'ivory')
     projectiles = []
     particles = []
@@ -164,6 +162,11 @@ function animate() {
     enemies.forEach((enemy, index) => {
         // pass in player coordinates for homing
         enemy.update(c, player.x, player.y)
+        enemies.forEach((e, i) => {
+            if (e.id !== enemy.id) {
+                resolveCollision(e, enemy)
+            }
+        })
 
         const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y)
         if (dist - enemy.radius - player.radius < 1) endGame()
@@ -192,6 +195,72 @@ function animate() {
             }
         })
     })
+}
+
+/**
+ * Rotates coordinate system for velocities
+ *
+ * Takes velocities and alters them as if the coordinate system they're on was rotated
+ *
+ * @param  Object | velocity | The velocity of an individual particle
+ * @param  Float  | angle    | The angle of collision between two objects in radians
+ * @return Object | The altered x and y velocities after the coordinate system has been rotated
+ */
+
+function rotate(velocity, angle) {
+    const rotatedVelocities = {
+        x: velocity.x * Math.cos(angle) - velocity.y * Math.sin(angle),
+        y: velocity.x * Math.sin(angle) + velocity.y * Math.cos(angle)
+    };
+
+    return rotatedVelocities;
+}
+
+/**
+ * Swaps out two colliding particles' x and y velocities after running through
+ * an elastic collision reaction equation
+ *
+ * @param  Object | particle      | A particle object with x and y coordinates, plus velocity
+ * @param  Object | otherParticle | A particle object with x and y coordinates, plus velocity
+ * @return Null | Does not return a value
+ */
+
+function resolveCollision(particle, otherParticle) {
+    const xVelocityDiff = particle.velocity.x - otherParticle.velocity.x;
+    const yVelocityDiff = particle.velocity.y - otherParticle.velocity.y;
+
+    const xDist = otherParticle.x - particle.x;
+    const yDist = otherParticle.y - particle.y;
+
+    // Prevent accidental overlap of particles
+    if (xVelocityDiff * xDist + yVelocityDiff * yDist >= 0) {
+
+        // Grab angle between the two colliding particles
+        const angle = -Math.atan2(otherParticle.y - particle.y, otherParticle.x - particle.x);
+
+        // Store mass in var for better readability in collision equation
+        const m1 = particle.radius;
+        const m2 = otherParticle.radius;
+
+        // Velocity before equation
+        const u1 = rotate(particle.velocity, angle);
+        const u2 = rotate(otherParticle.velocity, angle);
+
+        // Velocity after 1d collision equation
+        const v1 = { x: u1.x * (m1 - m2) / (m1 + m2) + u2.x * 2 * m2 / (m1 + m2), y: u1.y };
+        const v2 = { x: u2.x * (m1 - m2) / (m1 + m2) + u1.x * 2 * m2 / (m1 + m2), y: u2.y };
+
+        // Final velocity after rotating axis back to original location
+        const vFinal1 = rotate(v1, -angle);
+        const vFinal2 = rotate(v2, -angle);
+
+        // Swap particle velocities for realistic bounce effect
+        particle.velocity.x = vFinal1.x;
+        particle.velocity.y = vFinal1.y;
+
+        otherParticle.velocity.x = vFinal2.x;
+        otherParticle.velocity.y = vFinal2.y;
+    }
 }
 
 function createScoreLabel(projectile: Projectile, score: number) {
@@ -312,7 +381,6 @@ function continueCombo() {
     destroySound.play()
     combo += 1
     if (combo >= 3) {
-        comboContainer.style.display = 'inline'
         comboEl.innerHTML = combo.toString()
     }
 }
@@ -339,7 +407,6 @@ function breakCombo(enemy: Enemy) {
     })
     litCount = 0
     scene.color = enemy.color
-    comboContainer.style.display = 'none'
 }
 addEventListener('mousedown', ({ clientX, clientY }) => {
     mouse.down = true

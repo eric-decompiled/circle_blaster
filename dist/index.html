@@ -15,12 +15,13 @@
       overflow: hidden;
     }
   </style>
-<link rel="icon" href="favicon.ico"></head>
+  <link rel="icon" href="favicon.ico">
+</head>
 
 <body>
   <div class="flex justify-between">
     <div class="p-2 text-white text-sm ml-2 select-none"><span>Score: </span><span id="scoreEl">0</span></div>
-    <div id="comboContainer" class="hidden p-1 text-white ml-2 select-none mr-1">
+    <div class="p-1 text-white ml-2 select-none mr-1">
       <span>Combo: </span><span id="comboEl">0</span>
     </div>
     <div class="p-2 text-white text-sm ml-2 select-none mr-1"><span>Level: </span><span id="levelEl">1</span>
@@ -29,11 +30,12 @@
   <canvas></canvas>
 
   <div id="modalEl" class="fixed inset-0 flex items-center justify-center">
-    <div id="whiteModalEl" class="bg-white max-w-md w-full p-6 text-center">
+    <div id="whiteModalEl" class="bg-gray-700 text-white max-w-md w-full p-6 text-center">
       <h1 class="text-4xl font-bold leading-none" id="bigScoreEl">0</h1>
-      <p class="text-sm text-gray-700 mb-4">Points</p>
+      <p class="text-sm text-white mb-4">Points</p>
       <div>
-        <button id="startGameBtn" class="bg-blue-500 text-white w-full py-3 rounded-full text-sm">Start Game</button>
+        <button id="startGameBtn" class="bg-blue-700 hover:shadow text-white w-full py-3 rounded-full text-sm">Start
+          Game</button>
       </div>
       <div class="center font-light text-xs pt-1 mt-2">
         Arrow keys or WASD to move. Click to shoot. Collect <img src="./img/lightning.png"
@@ -41,6 +43,7 @@
       </div>
     </div>
   </div>
-<script src="./js/canvas.bundle.js"></script></body>
+  <script src="./js/canvas.bundle.js"></script>
+</body>
 
 </html>
