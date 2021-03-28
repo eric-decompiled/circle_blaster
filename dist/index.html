@@ -30,10 +30,18 @@
 
   <div id="modalEl" class="fixed inset-0 flex items-center justify-center">
     <div id="whiteModalEl" class="bg-gray-700 text-white max-w-md w-full p-6 text-center">
+      <div id="victoryEl" class="hidden">
+        <h1 class="text-8xl font-bold mb-4">Victory!</h1>
+        <h1 class="text-4xl font-bold leading-none" id="timeEl">0</h1>
+        <p class="text-sm mb-4">Run Time</p>
+        <h1 class="text-4xl font-bold leading-none" id="longestComboEl">0</h1>
+        <p class="text-sm mb-4">Longest Combo</p>
+      </div>
       <h1 class="text-4xl font-bold leading-none" id="bigScoreEl">0</h1>
       <p class="text-sm mb-4">Points</p>
       <div>
-        <button id="startGameBtn" class="bg-blue-700 hover:shadow text-white w-full py-3 rounded-full text-sm">Start Game</button>
+        <button id="startGameBtn" class="bg-blue-700 hover:shadow text-white w-full py-3 rounded-full text-sm">Start
+          Game</button>
       </div>
       <div class="center font-light text-xs pt-1 mt-2">
         Arrow keys or WASD to move. Click to shoot. Collect <img src="./img/lightning.png"

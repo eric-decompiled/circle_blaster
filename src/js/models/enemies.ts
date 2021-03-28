@@ -12,6 +12,7 @@ const enemyColors = [
     `hsl(220, 70%, 30%)`,
     `hsl(36, 90%, 30%)`
 ]
+
 const randomColor = () => {
     return enemyColors[Math.floor((Math.random() * enemyColors.length))]
 }
@@ -26,6 +27,7 @@ class Enemy {
     private drawRadius: number
     public color: string
     public inPlay: boolean
+    public isBoss: boolean
     private type: string
     private radians: number
     private center: Velocity // probably need to rename this / new type
@@ -53,6 +55,7 @@ class Enemy {
         this.alpha = 1
         this.friction = 0.95
         this.inPlay = false
+        this.isBoss = false
         this.drive = { x: 0, y: 0 }
         if (Math.random() < 0.40) {
             this.type = 'simple'
@@ -177,24 +180,26 @@ class Boss {
     private y: number
     public points: number
     public radius: number
+    public isBoss: true
     private baseSpeed: number
     private color: string
     private velocity: Velocity
     private frame: number
     private drawRadius: number
     constructor(width: number, height: number) {
-        if (Math.random() < 0.5) {
-            this.x = Math.random() < 0.5 ? 0 - 1000 : width + 1000
-            this.y = Math.random() * height
-        } else {
-            this.x = Math.random() * height
-            this.y = Math.random() < 0.5 ? 0 - 1000 : height + 1000
-        }
         this.radius = 250
         this.drawRadius = 250
         this.baseSpeed = 1.2
         this.points = 10000
         this.frame = 0
+        this.isBoss = true
+        if (Math.random() < 0.5) {
+            this.x = Math.random() < 0.5 ? 0 - this.radius : width + this.radius
+            this.y = Math.random() * height
+        } else {
+            this.x = Math.random() * height
+            this.y = Math.random() < 0.5 ? 0 - this.radius : height + this.radius
+        }
     }
 
     draw(c: CanvasRenderingContext2D) {

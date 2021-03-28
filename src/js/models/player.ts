@@ -24,7 +24,7 @@ class Player {
             y: 0
         }
         this.speed = 0.70
-        this.shotSpeed = 9
+        this.shotSpeed = 16
         this.power = 12
         this.unleashedColor = null
     }
@@ -82,6 +82,7 @@ class Player {
     unleash(unleashedColor: string) {
         if (!this.unleashedColor) {
             this.speed += 0.33
+            this.shotSpeed += 6
             unleashedAudio.play()
             this.unleashedColor = unleashedColor
         }
@@ -90,6 +91,7 @@ class Player {
     leash() {
         if (this.unleashedColor) {
             this.speed -= 0.33
+            this.shotSpeed -= 6
             this.unleashedColor = null
         }
     }

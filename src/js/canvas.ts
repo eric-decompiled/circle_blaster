@@ -3,9 +3,8 @@ import { Player } from './models/player'
 import { Enemy, Boss } from './models/enemies'
 import { PowerUp } from './models/powerups'
 import { Projectile, Particle, BackgroundParticle } from './models/particles'
-const albatrossSongURL = './audio/albatross.mp3'
-const movingMiamiSongURL = './audio/moving_to_miami.mp3'
 
+// HTML elements
 const canvas = document.querySelector('canvas')
 const scoreEl = document.querySelector('#scoreEl')
 const levelEl = document.querySelector('#levelEl')
@@ -14,35 +13,58 @@ const comboEl = document.querySelector('#comboEl')
 const bigScoreEl = document.querySelector('#bigScoreEl')
 const startGameBtn = document.querySelector('#startGameBtn')
 const inforBarEl = document.querySelector('#infoBar')
-const startGameAudio = new Audio('./audio/start.mp3')
-const endGameAudio = new Audio('./audio/altEnd.mp3')
-const comboBreak = new Audio('./audio/destroy.mp3')
-const destroyEnemy = new Audio('./audio/continue.mp3')
-const obtainPowerupAudio = new Audio('./audio/powerup.mp3')
-const backgroundMusic = new Audio(albatrossSongURL)
-let musicToggle = true
-backgroundMusic.volume = 0.50
+const longComboEl = document.querySelector('#longestComboEl')
+const runtimeEl = document.querySelector('#timeEl')
+const victoryEl = document.querySelector('#victoryEl') as HTMLElement
+
+// Songs
+const albatrossSongURL = './audio/albatross.mp3'
+const movingMiamiSongURL = './audio/moving_to_miami.mp3'
+const inCloudsSongURL = './audio/in_clouds.mp3'
+let currentSong = albatrossSongURL
+const backgroundMusic = new Audio(currentSong)
+backgroundMusic.volume = 0.66
 backgroundMusic.currentTime = 0
 const bossMusic = new Audio('./audio/altBoss.mp3')
 bossMusic.loop = true
-const alarmAudio = new Audio('./audio/warning.mp3')
+const victoryMusicURL = './audio/rising_stars.mp3'
+const victorySong = new Audio(victoryMusicURL)
+const winSound = new Audio('/audio/activation.mp3')
 
-backgroundMusic.addEventListener('ended', function () {
-    if (musicToggle) {
-        backgroundMusic.src = movingMiamiSongURL
-        backgroundMusic.volume = 0.5
-    } else {
-        backgroundMusic.src = albatrossSongURL
-        backgroundMusic.volume = 0.4
+function nextSong() {
+    switch (currentSong) {
+        case albatrossSongURL: default:
+            backgroundMusic.src = movingMiamiSongURL
+            backgroundMusic.volume = 0.4
+            break
+        case inCloudsSongURL:
+            backgroundMusic.src = albatrossSongURL
+            backgroundMusic.volume = 0.5
+            break
+        case movingMiamiSongURL:
+            backgroundMusic.src = inCloudsSongURL
+            backgroundMusic.volume = 0.33
+            break
     }
-    musicToggle = !musicToggle
     if (!scene.boss) {
+        backgroundMusic.src = currentSong
         backgroundMusic.pause()
         backgroundMusic.load()
         backgroundMusic.play()
 
     }
-})
+}
+
+// Sound FX
+const startGameAudio = new Audio('./audio/start.mp3')
+const endGameAudio = new Audio('./audio/altEnd.mp3')
+const comboBreak = new Audio('./audio/destroy.mp3')
+const destroyEnemy = new Audio('./audio/continue.mp3')
+const obtainPowerupAudio = new Audio('./audio/powerup.mp3')
+const alarmAudio = new Audio('./audio/warning.mp3')
+
+backgroundMusic.addEventListener('ended', nextSong)
+victorySong.addEventListener('ended', nextSong)
 
 const scene = {
     active: false,
@@ -76,6 +98,8 @@ let frame: number
 let score: number
 let level: number
 let combo: number
+let longestCombo: number
+let startTime: any
 let particleCount: number
 let litCount: number
 let powerupTimeout = setTimeout(() => { }, 0) // let type inference do its thing
@@ -93,15 +117,16 @@ function init() {
         x: canvas.width - padding,
         y: canvas.height - padding
     }
+    startTime = Date.now()
     score = 0
     combo = 0
+    longestCombo = 0
     frame = 0
     level = 1
     comboEl.innerHTML = combo.toString()
-    endGameAudio.pause()
-    endGameAudio.currentTime = 0
+    victoryEl.style.display = 'none'
     gsap.to(bossMusic, {
-        volume: 0,
+        volume: 0.0,
         duration: 4,
         onComplete: () => {
             bossMusic.pause()
@@ -129,7 +154,6 @@ function init() {
 }
 
 function animate() {
-    // if(!scene.boss) spawnBoss()
     animationId = requestAnimationFrame(animate)
     frame++
     c.fillStyle = 'rgba(0, 0, 0, 0.5)' // create motion blur effect
@@ -160,18 +184,19 @@ function updateEnemies() {
         projectiles.forEach((projectile, projectileIndex) => {
             const dist = Math.hypot(projectile.x - enemy.x, projectile.y - enemy.y)
             if (dist - enemy.radius - projectile.radius < 0.1 && enemy.radius > 0) {
-                const splashAmount = Math.max(16, enemy.radius / 8)
+                const splashAmount = Math.max(16, enemy.radius / 6)
                 const splashAngle = Math.atan2(projectile.y - enemy.y, projectile.x - enemy.x)
-                hitSplash(projectile, enemy.color, splashAmount, splashAngle)
+                hitSplash(projectile.x, projectile.y, enemy.color, splashAmount, splashAngle)
                 setTimeout(() => projectiles.splice(projectileIndex, 1), 0)
                 if (enemy.hit(projectile.power)) {
                     // i.e. enemy survived hit
                     addScore(100, projectile)
                 } else {
                     enemy.color === scene.color ? continueCombo() : breakCombo(enemy)
+                    if (enemy.isBoss) winGame()
                     // extra splash for kill
                     const splashAmount = Math.random() * 12 + 6
-                    hitSplash(projectile, enemy.color, splashAmount, splashAngle)
+                    hitSplash(projectile.x, projectile.y, enemy.color, splashAmount, splashAngle)
                     addScore(enemy.points, projectile)
                     setTimeout(() => {
                         const enemyIndex = enemies.findIndex(e => e.id === enemy.id)
@@ -252,7 +277,7 @@ function lightUpBackgroundParticles() {
             if (!bp.touched) {
                 litCount += 1
                 bp.touched = true
-                if (litCount / particleCount > 0.50) {
+                if (litCount / particleCount > 0.60) {
                     player.unleash(bp.color)
                     backgroundParticles.forEach(bp => bp.touch())
                 }
@@ -384,13 +409,14 @@ function spawnBoss() {
         })
     }, 6000)
     setTimeout(() => bossMusic.play(), 10000)
-    enemies.push(new Boss(canvas.width, canvas.height))
+    let pushBoss = () => enemies.push(new Boss(canvas.width, canvas.height))
+    setTimeout(pushBoss, 11000)
 }
 
 function spawnEnemies(level: number) {
     spawnEnemy(1)
     if (level > 1) spawnEnemy(1)
-    if (level > 2 && !scene.boss) spawnEnemy(2)
+    if (level > 2) spawnEnemy(2)
     if (level > 3) spawnEnemy(3)
     if (level > 4 && !scene.boss) spawnBoss()
 }
@@ -422,6 +448,45 @@ function endGame() {
     })
 }
 
+function winGame() {
+    cancelAnimationFrame(animationId)
+    modalEl.style.display = 'flex'
+    bigScoreEl.innerHTML = score.toString()
+    backgroundMusic.src = victoryMusicURL
+    backgroundMusic.load()
+    backgroundMusic.play()
+    winSound.play()
+    victorySong.play()
+    scene.active = false
+    victoryEl.style.display = 'block'
+    bigScoreEl.innerHTML = score.toString()
+    longComboEl.innerHTML = longestCombo.toString()
+    // messey way to do time + doesn't handle hour+ time
+    let playTime = Date.now() - startTime
+    const timeString = `${new Date(playTime).toISOString().substr(14, 8)}`
+    runtimeEl.innerHTML = timeString
+
+    // idea to animate when player wins
+    // setInterval(() => {
+    //     hitSplash(Math.random() * bottomRight.x, Math.random() * bottomRight.y, 'ivory', 24, Math.random() * Math.PI * 2)
+    // }, 250)
+
+    gsap.to(bossMusic, {
+        volume: 0.0,
+        duration: 2,
+        onComplete: () => {
+            bossMusic.pause()
+            bossMusic.volume = 1
+        }
+    })
+    scene.active = false
+    gsap.to('#whiteModalEl', {
+        opacity: 1,
+        scale: 1,
+        duration: 0.35,
+    })
+}
+
 function cleanup() {
     // remove faded particles
     particles.forEach((p, i) => p.alpha <= 0 ? particles.splice(i, 1) : p.update(c))
@@ -439,15 +504,15 @@ function cleanup() {
     })
 }
 
-function hitSplash(projectile: Projectile, color: string, amount: number, angle: number) {
+function hitSplash(x: number, y: number, color: string, amount: number, angle: number) {
     // particles should be bias to break away from enemy
     const xBias = Math.cos(angle) * 1.1
     const yBias = Math.sin(angle) * 1.1
     for (let i = 0; i < amount; i++) {
         particles.push(
             new Particle(
-                projectile.x,
-                projectile.y,
+                x,
+                y,
                 Math.random() * 2,
                 color,
                 {
@@ -464,6 +529,7 @@ function continueCombo() {
     destroySound.volume = 0.75
     destroySound.play()
     combo += 1
+    longestCombo = longestCombo > combo ? longestCombo : combo
     comboEl.innerHTML = combo.toString()
 }
 
