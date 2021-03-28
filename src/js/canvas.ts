@@ -3,8 +3,6 @@ import { Player } from './models/player'
 import { Enemy, Boss } from './models/enemies'
 import { PowerUp } from './models/powerups'
 import { Projectile, Particle, BackgroundParticle } from './models/particles'
-var mixpanel = require('mixpanel-browser');
-mixpanel.init("a2a81abd1412e518b277e0bfbab414bc");
 
 // HTML elements
 const canvas = document.querySelector('canvas')
@@ -53,7 +51,6 @@ function nextSong() {
         backgroundMusic.pause()
         backgroundMusic.load()
         backgroundMusic.play()
-
     }
 }
 
@@ -105,17 +102,12 @@ let particleCount: number
 let powerupTimeout = setTimeout(() => { }, 0) // let type inference do its thing
 const spacing = 30
 const padding = 50
-let enableMixpanel = true
 
 // stats
 let longestCombo: number
 let startTime: any
 
 function init() {
-    if (window.location.hostname === 'localhost') {
-        enableMixpanel = false
-    }
-    console.log(window.location)
     canvas.width = innerWidth
     canvas.height = innerHeight - inforBarEl.clientHeight
     topLeft = {
@@ -677,9 +669,9 @@ function endStats() {
 }
 
 function postEvent(name: string, payload: object) {
-    if (enableMixpanel) {
-        mixpanel.track(name, payload)
-    } else {
-        console.log('dev tracking: ', name, payload)
-    }
+    // if (enableMixpanel) {
+    //     mixpanel.track(name, payload)
+    // } else {
+    //     console.log('dev tracking: ', name, payload)
+    // }
 }
