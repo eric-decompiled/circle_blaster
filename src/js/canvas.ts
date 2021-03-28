@@ -16,12 +16,30 @@ const endGameAudio = new Audio('./audio/altEnd.mp3')
 const comboBreak = new Audio('./audio/destroy.mp3')
 const destroyEnemy = new Audio('./audio/continue.mp3')
 const obtainPowerupAudio = new Audio('./audio/powerup.mp3')
-const backgroundMusic = new Audio('./audio/alternate.mp3')
+const backgroundMusic = new Audio('./audio/albatross.mp3')
+const alternateBackgroundMusic = new Audio('./audio/moving_to_miami.mp3')
+let musicToggle = true
 backgroundMusic.volume = 0.50
-backgroundMusic.loop = true
+backgroundMusic.currentTime = 0
+alternateBackgroundMusic.volume = 0.40
 const bossMusic = new Audio('./audio/altBoss.mp3')
 bossMusic.loop = true
 const alarmAudio = new Audio('./audio/warning.mp3')
+
+backgroundMusic.addEventListener('ended', function () {
+    if (musicToggle) {
+        backgroundMusic.src = './audio/moving_to_miami.mp3'
+    } else {
+        backgroundMusic.src = './audio/albatross.mp3'
+    }
+    musicToggle = !musicToggle
+    if (!scene.boss) {
+        backgroundMusic.pause()
+        backgroundMusic.load()
+        backgroundMusic.play()
+
+    }
+})
 
 const scene = {
     active: false,
@@ -73,7 +91,6 @@ function init() {
             bossMusic.volume = 1.0
         }
     })
-    backgroundMusic.currentTime = 0
     backgroundMusic.volume = 0.5
     backgroundMusic.play()
     scene.boss = false
@@ -164,7 +181,10 @@ function animate() {
         enemy.update(c, player.x, player.y)
         enemies.forEach((e, i) => {
             if (e.id !== enemy.id) {
-                resolveCollision(e, enemy)
+                const dist = Math.hypot(enemy.x - e.x, enemy.y - e.y)
+                if (dist - enemy.radius - e.radius < 0.1 && enemy.radius > 0) {
+                    resolveCollision(e, enemy)
+                }
             }
         })
 
@@ -231,7 +251,7 @@ function resolveCollision(particle, otherParticle) {
 
     const xDist = otherParticle.x - particle.x;
     const yDist = otherParticle.y - particle.y;
-
+    debugger
     // Prevent accidental overlap of particles
     if (xVelocityDiff * xDist + yVelocityDiff * yDist >= 0) {
 
@@ -239,6 +259,7 @@ function resolveCollision(particle, otherParticle) {
         const angle = -Math.atan2(otherParticle.y - particle.y, otherParticle.x - particle.x);
 
         // Store mass in var for better readability in collision equation
+        // assumes radius always equal mass
         const m1 = particle.radius;
         const m2 = otherParticle.radius;
 
@@ -300,6 +321,7 @@ function spawnBoss() {
         volume: 0.0,
         duration: 6,
         onComplete: () => {
+            backgroundMusic.src = './audio/albatross.mp3'
             backgroundMusic.currentTime = 0
             backgroundMusic.pause()
         }
@@ -324,7 +346,7 @@ function spawnEnemies(level: number) {
     spawnEnemy(1)
     if (level > 1) spawnEnemy(1)
     if (level > 2) spawnEnemy(2)
-    if (level > 3 && !scene.boss) spawnEnemy(3)
+    if (level > 3) spawnEnemy(3)
     if (level > 4 && !scene.boss) spawnBoss()
 }
 
@@ -380,13 +402,10 @@ function continueCombo() {
     destroySound.volume = 0.75
     destroySound.play()
     combo += 1
-    if (combo >= 3) {
-        comboEl.innerHTML = combo.toString()
-    }
+    comboEl.innerHTML = combo.toString()
 }
 
 function breakCombo(enemy: Enemy) {
-    combo = 0
     const breakSound = comboBreak.cloneNode() as HTMLAudioElement
     breakSound.volume = 0.25
     breakSound.play()
@@ -405,6 +424,8 @@ function breakCombo(enemy: Enemy) {
             }
         })
     })
+    combo = 0
+    comboEl.innerHTML = combo.toString()
     litCount = 0
     scene.color = enemy.color
 }

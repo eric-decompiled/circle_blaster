@@ -33,6 +33,7 @@ class Enemy {
     private spinRate: number
     private velocity: Velocity
     private alpha: number
+    private friction: number
     constructor(width: number, height: number, level: number) {
         const radius = Math.random() * (60 - 10) + 10
         if (Math.random() < 0.5) {
@@ -61,11 +62,12 @@ class Enemy {
         this.radians = 0
         this.baseSpeed = level * 0.95 + (Math.random() * 0.35)
         this.alpha = 1
+        this.friction = 0.97
 
-        if (Math.random() < 0.25) {
-            this.type = 'spinning'
-            this.points += 50
-        }
+        // if (Math.random() < 0.25) {
+        //     this.type = 'spinning'
+        //     this.points += 50
+        // }
     }
 
     draw(c: CanvasRenderingContext2D) {
@@ -84,11 +86,14 @@ class Enemy {
 
     update(c: CanvasRenderingContext2D, targetX: number, targetY: number) {
         this.draw(c)
-        if (this.type === 'homing') {
+        if (this.type === 'simple') {
+            this.x += this.velocity.x
+            this.y += this.velocity.y
+        } else if (this.type === 'homing') {
             const angle = Math.atan2(targetY - this.y, targetX - this.x)
             this.velocity = {
-                x: Math.cos(angle) * this.baseSpeed,
-                y: Math.sin(angle) * this.baseSpeed
+                x: (this.velocity.x * this.friction) + (Math.cos(angle) * this.baseSpeed) * 0.1,
+                y: (this.velocity.y * this.friction) + (Math.sin(angle) * this.baseSpeed) * 0.1
             }
             this.x += this.velocity.x
             this.y += this.velocity.y
@@ -96,8 +101,8 @@ class Enemy {
             this.radians += this.spinRate
             const angle = Math.atan2(targetY - this.y, targetX - this.x)
             this.velocity = {
-                x: Math.cos(angle) * this.baseSpeed,
-                y: Math.sin(angle) * this.baseSpeed
+                x: (this.velocity.x * this.friction) + (Math.cos(angle) * this.baseSpeed) * 0.1,
+                y: (this.velocity.y * this.friction) + (Math.sin(angle) * this.baseSpeed) * 0.1
             }
             this.center.x += this.velocity.x
             this.center.y += this.velocity.y
@@ -109,7 +114,7 @@ class Enemy {
 
     hit(amount: number): boolean {
         const hitSound = enemyHitAudio.cloneNode() as HTMLAudioElement
-        hitSound.volume = 0.25
+        hitSound.volume = 0.33
         hitSound.play()
         this.radius -= amount
         if (this.radius > minEnemySize) {
@@ -179,12 +184,12 @@ class Boss {
     hit(amount: number) {
         // boss only take one damage
         const hitSound = enemyHitAudio.cloneNode() as HTMLAudioElement
-        hitSound.volume = 0.25
+        hitSound.volume = 0.50
         hitSound.play()
         this.radius -= 1
         if (this.radius > minEnemySize) {
             gsap.to(this, {
-                drawRadius: this.radius,
+                drawRadius: this.radius
             })
             return true
         } else {

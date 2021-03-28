@@ -63,7 +63,7 @@ class Player {
             y: Math.sin(angle) * this.shotSpeed
         }
         let s = shootAudio.cloneNode() as HTMLAudioElement
-        s.volume = 0.4
+        s.volume = 0.5
         s.play()
         return new Projectile(this.x, this.y, 5, this.color, velocity, this.power)
     }
