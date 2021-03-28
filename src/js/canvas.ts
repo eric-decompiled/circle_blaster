@@ -3,34 +3,37 @@ import { Player } from './models/player'
 import { Enemy, Boss } from './models/enemies'
 import { PowerUp } from './models/powerups'
 import { Projectile, Particle, BackgroundParticle } from './models/particles'
+const albatrossSongURL = './audio/albatross.mp3'
+const movingMiamiSongURL = './audio/moving_to_miami.mp3'
 
 const canvas = document.querySelector('canvas')
 const scoreEl = document.querySelector('#scoreEl')
 const levelEl = document.querySelector('#levelEl')
 const modalEl = document.querySelector('#modalEl') as HTMLElement
-const bigScoreEl = document.querySelector('#bigScoreEl')
 const comboEl = document.querySelector('#comboEl')
+const bigScoreEl = document.querySelector('#bigScoreEl')
 const startGameBtn = document.querySelector('#startGameBtn')
+const inforBarEl = document.querySelector('#infoBar')
 const startGameAudio = new Audio('./audio/start.mp3')
 const endGameAudio = new Audio('./audio/altEnd.mp3')
 const comboBreak = new Audio('./audio/destroy.mp3')
 const destroyEnemy = new Audio('./audio/continue.mp3')
 const obtainPowerupAudio = new Audio('./audio/powerup.mp3')
-const backgroundMusic = new Audio('./audio/albatross.mp3')
-const alternateBackgroundMusic = new Audio('./audio/moving_to_miami.mp3')
+const backgroundMusic = new Audio(albatrossSongURL)
 let musicToggle = true
 backgroundMusic.volume = 0.50
 backgroundMusic.currentTime = 0
-alternateBackgroundMusic.volume = 0.40
 const bossMusic = new Audio('./audio/altBoss.mp3')
 bossMusic.loop = true
 const alarmAudio = new Audio('./audio/warning.mp3')
 
 backgroundMusic.addEventListener('ended', function () {
     if (musicToggle) {
-        backgroundMusic.src = './audio/moving_to_miami.mp3'
+        backgroundMusic.src = movingMiamiSongURL
+        backgroundMusic.volume = 0.5
     } else {
-        backgroundMusic.src = './audio/albatross.mp3'
+        backgroundMusic.src = albatrossSongURL
+        backgroundMusic.volume = 0.4
     }
     musicToggle = !musicToggle
     if (!scene.boss) {
@@ -59,7 +62,9 @@ const mouse = {
 }
 const c = canvas.getContext('2d')
 canvas.width = innerWidth
-canvas.height = innerHeight
+canvas.height = innerHeight - inforBarEl.clientHeight
+let topLeft = { x: 0, y: 0 }
+let bottomRight = { x: 0, y: 0 }
 let animationId: number
 let player: Player
 let powerUps: PowerUp[]
@@ -74,12 +79,25 @@ let combo: number
 let particleCount: number
 let litCount: number
 let powerupTimeout = setTimeout(() => { }, 0) // let type inference do its thing
+const spacing = 30
+const padding = 50
 
 function init() {
+    canvas.width = innerWidth
+    canvas.height = innerHeight - inforBarEl.clientHeight
+    topLeft = {
+        x: 0 + padding,
+        y: 0 + padding
+    }
+    bottomRight = {
+        x: canvas.width - padding,
+        y: canvas.height - padding
+    }
     score = 0
     combo = 0
     frame = 0
     level = 1
+    comboEl.innerHTML = combo.toString()
     endGameAudio.pause()
     endGameAudio.currentTime = 0
     gsap.to(bossMusic, {
@@ -95,55 +113,104 @@ function init() {
     backgroundMusic.play()
     scene.boss = false
     levelEl.innerHTML = level.toString()
-    player = new Player(canvas, 10, 'ivory')
+    player = new Player(topLeft, bottomRight, 10, 'ivory')
     projectiles = []
     particles = []
     enemies = []
     powerUps = []
     backgroundParticles = []
-    let spacing = 30
-    for (var i = spacing / 2; i < canvas.width; i += spacing) {
-        for (let j = spacing / 2; j < canvas.height; j += spacing) {
+    for (var i = topLeft.x; i < bottomRight.x; i += spacing) {
+        for (let j = topLeft.y; j < bottomRight.y; j += spacing) {
             backgroundParticles.push(new BackgroundParticle(i, j, 3, 'ivory'))
         }
     }
     particleCount = backgroundParticles.length
     litCount = 0
 }
+
 function animate() {
+    // if(!scene.boss) spawnBoss()
     animationId = requestAnimationFrame(animate)
     frame++
-    if (frame % 250 === 0) {
-        spawnEnemies(level)
-    }
-    if (frame % 1250 === 0) {
-        setLevel(score)
-        spawnPowerUp()
-    }
-    c.fillStyle = 'rgba(0, 0, 0, 0.5)'
+    c.fillStyle = 'rgba(0, 0, 0, 0.5)' // create motion blur effect
     c.fillRect(0, 0, canvas.width, canvas.height)
-    // animate background dots
-    backgroundParticles.forEach(bp => {
-        const dist = Math.hypot(player.x - bp.x, player.y - bp.y)
-        const hideRadius = 125
-        if (dist < hideRadius) {
-            // hide close particles, illuminate radius
-            bp.alpha = dist < 70 ? 0 : 0.35
-            if (!bp.touched) {
-                litCount += 1
-                bp.touched = true
-                if (litCount / particleCount > 0.50) {
-                    player.unleash(bp.color)
-                    backgroundParticles.forEach(bp => bp.touch())
-                }
-            }
-        }
-        bp.update(c)
-    })
+    if (frame % 300 === 0) {
+        setLevel(score)
+        spawnEnemies(level)
+        if (Math.random() < 0.20) spawnPowerUp()
+    }
+    lightUpBackgroundParticles()
+    updatePowerups()
+    updateEnemies()
     player.update(c, keys)
     if (player.powerUp === 'Automatic' && mouse.down && frame % 4 === 0) {
         projectiles.push(player.shoot(mouse))
     }
+    cleanup()
+}
+
+function updateEnemies() {
+    enemies.forEach((enemy, index) => {
+        const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y)
+        if (dist - enemy.radius - player.radius < 1) endGame()
+
+        enemy.update(c, player.x, player.y)
+
+        // check if enemy hit any projectiles
+        projectiles.forEach((projectile, projectileIndex) => {
+            const dist = Math.hypot(projectile.x - enemy.x, projectile.y - enemy.y)
+            if (dist - enemy.radius - projectile.radius < 0.1 && enemy.radius > 0) {
+                const splashAmount = Math.max(16, enemy.radius / 8)
+                const splashAngle = Math.atan2(projectile.y - enemy.y, projectile.x - enemy.x)
+                hitSplash(projectile, enemy.color, splashAmount, splashAngle)
+                setTimeout(() => projectiles.splice(projectileIndex, 1), 0)
+                if (enemy.hit(projectile.power)) {
+                    // i.e. enemy survived hit
+                    addScore(100, projectile)
+                } else {
+                    enemy.color === scene.color ? continueCombo() : breakCombo(enemy)
+                    // extra splash for kill
+                    const splashAmount = Math.random() * 12 + 6
+                    hitSplash(projectile, enemy.color, splashAmount, splashAngle)
+                    addScore(enemy.points, projectile)
+                    setTimeout(() => {
+                        const enemyIndex = enemies.findIndex(e => e.id === enemy.id)
+                        if (enemyIndex >= 0) enemies.splice(enemyIndex, 1)
+                    }, 250)
+                }
+            }
+        })
+        // check for collisions with other enemies. For loop to not double collide.
+        for (let i = index + 1; i < enemies.length; i++) {
+            let e = enemies[i]
+            const dist = Math.hypot(enemy.x - e.x, enemy.y - e.y)
+            if (dist - enemy.radius - e.radius < 0.1 && enemy.radius > 0) {
+                resolveCollision(e, enemy)
+            }
+        }
+        // bounce off walls
+        const collidedWithX = enemy.x - enemy.radius + enemy.velocity.x < topLeft.x || enemy.x + enemy.radius + enemy.velocity.x > bottomRight.x
+        const collidedWithY = enemy.y - enemy.radius + enemy.velocity.y < topLeft.y || enemy.y + enemy.radius + enemy.velocity.y > bottomRight.y
+        if (enemy.inPlay) {
+            if (collidedWithX) {
+                enemy.velocity.x = -enemy.velocity.x
+                if (enemy.type === 'oscilator') {
+                    enemy.drive.x = -enemy.drive.x
+                }
+            }
+            if (collidedWithY) {
+                enemy.velocity.y = -enemy.velocity.y
+                if (enemy.type === 'oscilator') {
+                    enemy.drive.y = -enemy.drive.y
+                }
+            }
+        } else {
+            enemy.inPlay = !(collidedWithX || collidedWithY)
+        }
+    })
+}
+
+function updatePowerups() {
     powerUps.forEach((powerUp, index) => {
         const dist = Math.hypot(player.x - powerUp.x, player.y - powerUp.y)
         if (dist - player.radius - powerUp.width / 2 < 1) {
@@ -160,60 +227,38 @@ function animate() {
         } else {
             powerUp.update(c)
         }
-    })
-    // remove particles when they are no longer visible
-    particles.forEach((p, i) => p.alpha <= 0 ? particles.splice(i, 1) : p.update(c))
-    // remove projectiles out of bounds
-    projectiles.forEach((projectile, index) => {
-        projectile.update(c)
-        // gc out of bounds projectiles
-        if (
-            projectile.x + projectile.radius < 0 ||
-            projectile.x - projectile.radius > canvas.width ||
-            projectile.y + projectile.radius < 0 ||
-            projectile.y - projectile.radius > canvas.height
-        ) {
-            setTimeout(() => projectiles.splice(index, 1), 0)
+        const collidedWithX = powerUp.x - powerUp.width / 2 <= topLeft.x || powerUp.x + powerUp.width / 2 >= bottomRight.x
+        const collidedWithY = powerUp.y - powerUp.height / 3 <= topLeft.y || powerUp.y + powerUp.height / 2 >= bottomRight.x
+        if (powerUp.inPlay) {
+            if (collidedWithX) {
+                powerUp.velocity.x = -powerUp.velocity.x
+            }
+            if (collidedWithY) {
+                powerUp.velocity.y = -powerUp.velocity.y
+            }
+        } else {
+            powerUp.inPlay = !(collidedWithX || collidedWithY)
         }
     })
-    enemies.forEach((enemy, index) => {
-        // pass in player coordinates for homing
-        enemy.update(c, player.x, player.y)
-        enemies.forEach((e, i) => {
-            if (e.id !== enemy.id) {
-                const dist = Math.hypot(enemy.x - e.x, enemy.y - e.y)
-                if (dist - enemy.radius - e.radius < 0.1 && enemy.radius > 0) {
-                    resolveCollision(e, enemy)
+}
+
+function lightUpBackgroundParticles() {
+    backgroundParticles.forEach(bp => {
+        const dist = Math.hypot(player.x - bp.x, player.y - bp.y)
+        const hideRadius = 125
+        if (dist < hideRadius) {
+            // hide close particles, illuminate radius
+            bp.alpha = dist < 70 ? 0 : 0.35
+            if (!bp.touched) {
+                litCount += 1
+                bp.touched = true
+                if (litCount / particleCount > 0.50) {
+                    player.unleash(bp.color)
+                    backgroundParticles.forEach(bp => bp.touch())
                 }
             }
-        })
-
-        const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y)
-        if (dist - enemy.radius - player.radius < 1) endGame()
-
-        // check if enemy hit any projectiles
-        projectiles.forEach((projectile, projectileIndex) => {
-            const dist = Math.hypot(projectile.x - enemy.x, projectile.y - enemy.y)
-            if (dist - enemy.radius - projectile.radius < 0.1 && enemy.radius > 0) {
-                const splashAmount = Math.max(16, enemy.radius / 8)
-                const splashAngle = Math.atan2(projectile.y - enemy.y, projectile.x - enemy.x)
-                hitSplash(projectile, enemy.color, splashAmount, splashAngle)
-                setTimeout(() => projectiles.splice(projectileIndex, 1), 0)
-                if (enemy.hit(projectile.power)) {
-                    // i.e. enemy survived hit
-                    addScore(100, projectile)
-                } else {
-                    enemy.color === scene.color ? continueCombo() : breakCombo(enemy)
-                    const splashAmount = Math.random() * 18 + 6
-                    hitSplash(projectile, enemy.color, splashAmount, splashAngle)
-                    addScore(enemy.points, projectile)
-                    setTimeout(() => {
-                        const enemyIndex = enemies.findIndex(e => e.id === enemy.id)
-                        if (enemyIndex >= 0) enemies.splice(enemyIndex, 1)
-                    }, 250)
-                }
-            }
-        })
+        }
+        bp.update(c)
     })
 }
 
@@ -284,6 +329,14 @@ function resolveCollision(particle, otherParticle) {
     }
 }
 
+function addScore(basePoints: number, projectile: Projectile) {
+    let multiplier = 1 + combo / 10
+    const points = (basePoints * multiplier) | 0 // bitwise or 0 casts to int
+    score += points
+    scoreEl.innerHTML = score.toString()
+    createScoreLabel(projectile, points)
+}
+
 function createScoreLabel(projectile: Projectile, score: number) {
     const scoreLabel = document.createElement('label')
     scoreLabel.innerHTML = score.toString()
@@ -303,14 +356,6 @@ function createScoreLabel(projectile: Projectile, score: number) {
     })
 }
 
-function addScore(basePoints: number, projectile: Projectile) {
-    let multiplier = 1 + (combo > 5 ? combo / 10 : 0)
-    const points = (basePoints * multiplier) | 0 // bitwise or 0 casts to int
-    score += points
-    scoreEl.innerHTML = score.toString()
-    createScoreLabel(projectile, points)
-}
-
 function spawnEnemy(level: number) {
     enemies.push(new Enemy(canvas.width, canvas.height, level))
 }
@@ -321,7 +366,7 @@ function spawnBoss() {
         volume: 0.0,
         duration: 6,
         onComplete: () => {
-            backgroundMusic.src = './audio/albatross.mp3'
+            backgroundMusic.src = albatrossSongURL
             backgroundMusic.currentTime = 0
             backgroundMusic.pause()
         }
@@ -345,7 +390,7 @@ function spawnBoss() {
 function spawnEnemies(level: number) {
     spawnEnemy(1)
     if (level > 1) spawnEnemy(1)
-    if (level > 2) spawnEnemy(2)
+    if (level > 2 && !scene.boss) spawnEnemy(2)
     if (level > 3) spawnEnemy(3)
     if (level > 4 && !scene.boss) spawnBoss()
 }
@@ -374,6 +419,23 @@ function endGame() {
         opacity: 1,
         scale: 1,
         duration: 0.35,
+    })
+}
+
+function cleanup() {
+    // remove faded particles
+    particles.forEach((p, i) => p.alpha <= 0 ? particles.splice(i, 1) : p.update(c))
+    // remove projectiles out of bounds
+    projectiles.forEach((projectile, index) => {
+        projectile.update(c)
+        if (
+            projectile.x + projectile.radius < 0 ||
+            projectile.x - projectile.radius > canvas.width ||
+            projectile.y + projectile.radius < 0 ||
+            projectile.y - projectile.radius > canvas.height
+        ) {
+            setTimeout(() => projectiles.splice(index, 1), 0)
+        }
     })
 }
 
@@ -407,7 +469,7 @@ function continueCombo() {
 
 function breakCombo(enemy: Enemy) {
     const breakSound = comboBreak.cloneNode() as HTMLAudioElement
-    breakSound.volume = 0.25
+    breakSound.volume = 0.33
     breakSound.play()
     player.leash()
     backgroundParticles.forEach(p => {
@@ -429,6 +491,26 @@ function breakCombo(enemy: Enemy) {
     litCount = 0
     scene.color = enemy.color
 }
+
+// User input
+startGameBtn.addEventListener('click', (event) => {
+    init()
+    event.stopPropagation()
+    scoreEl.innerHTML = score.toString()
+    bigScoreEl.innerHTML = score.toString()
+    scene.active = true
+    gsap.to('#whiteModalEl', {
+        opacity: 0,
+        scale: 0.75,
+        ease: 'expo',
+        duration: 0.25,
+        onComplete: () => modalEl.style.display = 'none'
+    })
+    startGameAudio.play()
+    backgroundMusic.play()
+    animate()
+})
+
 addEventListener('mousedown', ({ clientX, clientY }) => {
     mouse.down = true
     mouse.x = clientX
@@ -463,24 +545,6 @@ addEventListener('click', (event) => {
     mouse.x = event.clientX
     mouse.y = event.clientY
     if (scene.active) projectiles.push(player.shoot(mouse))
-})
-
-startGameBtn.addEventListener('click', (event) => {
-    init()
-    event.stopPropagation()
-    scoreEl.innerHTML = score.toString()
-    bigScoreEl.innerHTML = score.toString()
-    scene.active = true
-    gsap.to('#whiteModalEl', {
-        opacity: 0,
-        scale: 0.75,
-        ease: 'expo',
-        duration: 0.25,
-        onComplete: () => modalEl.style.display = 'none'
-    })
-    startGameAudio.play()
-    backgroundMusic.play()
-    animate()
 })
 
 addEventListener('resize', () => {

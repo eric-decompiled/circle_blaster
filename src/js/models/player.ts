@@ -6,8 +6,6 @@ export { Player }
 class Player {
     public x: number
     public y: number
-    public radius: number
-    public color: string
     public powerUp: string
     public velocity: Velocity
     private unleashedColor: string
@@ -15,25 +13,19 @@ class Player {
     private power: number
     private shotSpeed: number
     private friction: number
-    private xEdge: number
-    private yEdge: number
 
-    constructor(canvas: any, radius: number, color: string) {
-        this.x = canvas.width / 2
-        this.y = canvas.height / 2
-        this.xEdge = canvas.width
-        this.yEdge = canvas.height
-        this.radius = radius
+    constructor(private topLeft: any, private bottomRight: any, public radius: number, public color: string) {
+        this.x = (this.topLeft.x + this.bottomRight.x) / 2
+        this.y = (this.topLeft.y + this.bottomRight.y) / 2
         this.powerUp = ''
-        this.color = color
         this.friction = 0.92
         this.velocity = {
             x: 0,
             y: 0
         }
-        this.speed = 0.75
-        this.shotSpeed = 6
-        this.power = 15
+        this.speed = 0.70
+        this.shotSpeed = 9
+        this.power = 12
         this.unleashedColor = null
     }
 
@@ -44,14 +36,6 @@ class Player {
     draw(c: CanvasRenderingContext2D) {
         c.beginPath()
         c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
-        if (this.unleashedColor) {
-            c.save()
-            c.strokeStyle = this.unleashedColor
-            c.lineWidth = 5
-            c.globalAlpha = 0.5
-            c.stroke()
-            c.restore()
-        }
         c.fillStyle = this.color
         c.fill()
     }
@@ -77,8 +61,8 @@ class Player {
         this.velocity.x *= this.friction
         this.velocity.y *= this.friction
         if (
-            this.x - this.radius + this.velocity.x > 0 &&
-            this.x + this.radius + this.velocity.x < this.xEdge
+            this.x - this.radius + this.velocity.x > this.topLeft.x &&
+            this.x + this.radius + this.velocity.x < this.bottomRight.x
         ) {
             this.x += this.velocity.x
         } else {
@@ -86,8 +70,8 @@ class Player {
         }
 
         if (
-            this.y - this.radius + this.velocity.y > 0 &&
-            this.y + this.radius + this.velocity.y < this.yEdge
+            this.y - this.radius + this.velocity.y > this.topLeft.y &&
+            this.y + this.radius + this.velocity.y < this.bottomRight.y
         ) {
             this.y += this.velocity.y
         } else {
@@ -97,8 +81,7 @@ class Player {
 
     unleash(unleashedColor: string) {
         if (!this.unleashedColor) {
-            this.power += 5
-            this.speed += 0.5
+            this.speed += 0.33
             unleashedAudio.play()
             this.unleashedColor = unleashedColor
         }
@@ -106,8 +89,7 @@ class Player {
 
     leash() {
         if (this.unleashedColor) {
-            this.power -= 5
-            this.speed -= 0.5
+            this.speed -= 0.33
             this.unleashedColor = null
         }
     }

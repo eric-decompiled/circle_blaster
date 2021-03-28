@@ -83,7 +83,7 @@ class BackgroundParticle {
         this.y = y
         this.radius = radius
         this.color = color
-        this.alpha = 0.05
+        this.alpha = 0.075
         this.initialAlpha = this.alpha
         this.shimmerAlpha = this.alpha + 0.2
         this.touched = false

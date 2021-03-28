@@ -8,7 +8,8 @@ class PowerUp {
     public y: number
     public width: number
     public height: number
-    private velocity: Velocity
+    public velocity: Velocity
+    public inPlay: boolean
     constructor({ width, height }) {
         if (Math.random() < 0.5) {
             this.x = Math.random() < 0.5 ? 0 - 7 : width - 7
@@ -19,12 +20,13 @@ class PowerUp {
         }
         const angle = Math.atan2(height / 2 - this.y, width / 2 - this.x)
         const velocity = {
-            x: Math.cos(angle) * Math.max(Math.random(), 0.25),
-            y: Math.sin(angle) * Math.max(Math.random(), 0.25)
+            x: Math.cos(angle) + Math.random(),
+            y: Math.sin(angle) + Math.random()
         }
         this.velocity = velocity
         this.width = 14
         this.height = 19
+        this.inPlay = false
     }
 
     draw(c: CanvasRenderingContext2D) {

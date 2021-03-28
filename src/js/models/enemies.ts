@@ -4,7 +4,7 @@ export {
     Boss
 }
 
-const minEnemySize = 12
+const minEnemySize = 15
 const enemyHitAudio = new Audio('./audio/hit.mp3')
 const enemyColors = [
     `hsl(0, 70%, 30%)`,
@@ -15,7 +15,7 @@ const enemyColors = [
 const randomColor = () => {
     return enemyColors[Math.floor((Math.random() * enemyColors.length))]
 }
-
+const oscilatorPadding = 75 // dont spawn oscilators on edges
 let id = 1
 class Enemy {
     public id: number
@@ -25,6 +25,7 @@ class Enemy {
     public radius: number
     private drawRadius: number
     public color: string
+    public inPlay: boolean
     private type: string
     private radians: number
     private center: Velocity // probably need to rename this / new type
@@ -34,20 +35,9 @@ class Enemy {
     private velocity: Velocity
     private alpha: number
     private friction: number
+    private drive: { x: number, y: number }
     constructor(width: number, height: number, level: number) {
         const radius = Math.random() * (60 - 10) + 10
-        if (Math.random() < 0.5) {
-            this.x = Math.random() < 0.5 ? 0 - radius : width + radius
-            this.y = Math.random() * height
-        } else {
-            this.x = Math.random() * height
-            this.y = Math.random() < 0.5 ? 0 - radius : height + radius
-        }
-        const angle = Math.atan2(height / 2 - this.y, width / 2 - this.x)
-        const velocity = {
-            x: Math.cos(angle),
-            y: Math.sin(angle)
-        }
 
         this.id = id++
         this.points = 200 + level * 50
@@ -56,18 +46,59 @@ class Enemy {
         this.spinRadius = Math.max(30, Math.random() * 100)
         this.spinRate = 0.05
         this.color = randomColor()
-        this.velocity = velocity
         this.type = 'homing'
         this.center = { x: this.x, y: this.y }
         this.radians = 0
-        this.baseSpeed = level * 0.95 + (Math.random() * 0.35)
+        this.baseSpeed = 0.75 + (level * 0.15) + (Math.random() * 0.15)
         this.alpha = 1
-        this.friction = 0.97
-
-        // if (Math.random() < 0.25) {
-        //     this.type = 'spinning'
-        //     this.points += 50
-        // }
+        this.friction = 0.95
+        this.inPlay = false
+        this.drive = { x: 0, y: 0 }
+        if (Math.random() < 0.40) {
+            this.type = 'simple'
+            if(Math.random() < 0.60 && level > 2) {
+                this.type = 'oscilator'
+            }
+        }
+        if (Math.random() < 0.5) {
+            this.x = Math.random() < 0.5 ? 0 - radius : width + radius
+            this.y = Math.random() * height
+            if (this.type === 'oscilator') {
+                this.drive.x = this.x < 0 ? this.baseSpeed : -this.baseSpeed
+                this.drive.x *= 0.25
+                this.velocity = {
+                    x: 0,
+                    y: 0
+                }
+                if (this.y - oscilatorPadding < 0) {
+                    this.y += oscilatorPadding + this.radius
+                } else if (this.y + oscilatorPadding > height) {
+                    this.y -= oscilatorPadding + this.radius
+                }
+            }
+        } else {
+            this.x = Math.random() * height
+            this.y = Math.random() < 0.5 ? 0 - radius : height + radius
+            if (this.type === 'oscilator') {
+                this.drive.y = this.y < 0 ? this.baseSpeed : -this.baseSpeed
+                this.drive.y *= 0.25
+                this.velocity = {
+                    x: 0,
+                    y: 0
+                }
+                if (this.x - oscilatorPadding < 0) {
+                    this.x += oscilatorPadding + this.radius
+                } else if (this.x + oscilatorPadding > width) {
+                    this.x -= oscilatorPadding + this.radius
+                }
+            }
+        }
+        const angle = Math.atan2(height / 2 - this.y, width / 2 - this.x)
+        const velocity = {
+            x: Math.cos(angle) * this.baseSpeed*3,
+            y: Math.sin(angle) * this.baseSpeed*3
+        }
+        if (this.type !== 'oscilator') this.velocity = velocity
     }
 
     draw(c: CanvasRenderingContext2D) {
@@ -89,11 +120,19 @@ class Enemy {
         if (this.type === 'simple') {
             this.x += this.velocity.x
             this.y += this.velocity.y
+        }
+        else if (this.type === 'oscilator') {
+            this.velocity = {
+                x: (this.velocity.x * this.friction) + this.drive.x,
+                y: (this.velocity.y * this.friction) + this.drive.y,
+            }
+            this.x += this.velocity.x
+            this.y += this.velocity.y
         } else if (this.type === 'homing') {
             const angle = Math.atan2(targetY - this.y, targetX - this.x)
             this.velocity = {
-                x: (this.velocity.x * this.friction) + (Math.cos(angle) * this.baseSpeed) * 0.1,
-                y: (this.velocity.y * this.friction) + (Math.sin(angle) * this.baseSpeed) * 0.1
+                x: (this.velocity.x * this.friction) + (Math.cos(angle) * this.baseSpeed) * 0.2,
+                y: (this.velocity.y * this.friction) + (Math.sin(angle) * this.baseSpeed) * 0.2
             }
             this.x += this.velocity.x
             this.y += this.velocity.y
