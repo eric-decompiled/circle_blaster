@@ -3,6 +3,8 @@ import { Player } from './models/player'
 import { Enemy, Boss } from './models/enemies'
 import { PowerUp } from './models/powerups'
 import { Projectile, Particle, BackgroundParticle } from './models/particles'
+var mixpanel = require('mixpanel-browser');
+mixpanel.init("a2a81abd1412e518b277e0bfbab414bc");
 
 // HTML elements
 const canvas = document.querySelector('canvas')
@@ -98,15 +100,22 @@ let frame: number
 let score: number
 let level: number
 let combo: number
-let longestCombo: number
-let startTime: any
-let particleCount: number
 let litCount: number
+let particleCount: number
 let powerupTimeout = setTimeout(() => { }, 0) // let type inference do its thing
 const spacing = 30
 const padding = 50
+let enableMixpanel = true
+
+// stats
+let longestCombo: number
+let startTime: any
 
 function init() {
+    if (window.location.hostname === 'localhost') {
+        enableMixpanel = false
+    }
+    console.log(window.location)
     canvas.width = innerWidth
     canvas.height = innerHeight - inforBarEl.clientHeight
     topLeft = {
@@ -117,12 +126,12 @@ function init() {
         x: canvas.width - padding,
         y: canvas.height - padding
     }
-    startTime = Date.now()
     score = 0
     combo = 0
-    longestCombo = 0
     frame = 0
     level = 1
+    longestCombo = 0
+    startTime = Date.now()
     comboEl.innerHTML = combo.toString()
     victoryEl.style.display = 'none'
     gsap.to(bossMusic, {
@@ -446,6 +455,7 @@ function endGame() {
         scale: 1,
         duration: 0.35,
     })
+    postEvent('game lost', endStats())
 }
 
 function winGame() {
@@ -485,7 +495,9 @@ function winGame() {
         scale: 1,
         duration: 0.35,
     })
+    postEvent('game won', endStats())
 }
+
 
 function cleanup() {
     // remove faded particles
@@ -575,6 +587,7 @@ startGameBtn.addEventListener('click', (event) => {
     startGameAudio.play()
     backgroundMusic.play()
     animate()
+    postEvent('game started', { "width": bottomRight.x, "height": bottomRight.y })
 })
 
 addEventListener('mousedown', ({ clientX, clientY }) => {
@@ -652,3 +665,21 @@ addEventListener('keyup', ({ code }) => {
             break
     }
 })
+
+function endStats() {
+    let playTime = Date.now() - startTime
+    const timeString = `${new Date(playTime).toISOString().substr(14, 8)}`
+    return {
+        'score': score,
+        'playTime': timeString,
+        'longestCombo': longestCombo
+    }
+}
+
+function postEvent(name: string, payload: object) {
+    if (enableMixpanel) {
+        mixpanel.track(name, payload)
+    } else {
+        console.log('dev tracking: ', name, payload)
+    }
+}
