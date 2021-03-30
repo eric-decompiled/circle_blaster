@@ -1,4 +1,5 @@
 let id = 1
+const absorbtion = 0.50
 export abstract class Circle {
     readonly id: number
     public velocity: Velocity
@@ -7,7 +8,8 @@ export abstract class Circle {
         public center: Point,
         public radius: number,
         public color: string,
-        protected friction = 0.997
+        public collisions = 0,
+        protected friction = 0.99995
     ) {
         this.id = id++
         this.velocity = new Velocity(0, 0)
@@ -16,7 +18,7 @@ export abstract class Circle {
 
     protected draw(c: CanvasRenderingContext2D): void {
         c.beginPath()
-        c.arc(this.center.x, this.center.y, this.radius, 0, Math.PI * 2, false)
+        c.arc(this.center.x, this.center.y, Math.max(1, this.radius), 0, Math.PI * 2, false)
         c.fillStyle = this.color
         c.fill()
     }
@@ -63,6 +65,10 @@ export abstract class Circle {
                 u2.x * (m1 - m2) / (m1 + m2) + u1.x * 2 * m2 / (m1 + m2),
                 u2.y
             )
+            v1.x *= absorbtion
+            v1.y *= absorbtion
+            v2.x *= absorbtion
+            v2.y *= absorbtion
 
             // Final velocity after rotating axis back to original location
             const vFinal1 = rotate(v1, -angle);
@@ -71,6 +77,8 @@ export abstract class Circle {
             // Swap particle velocities for realistic bounce effect
             this.velocity = vFinal1;
             other.velocity = vFinal2;
+            this.collisions++
+            other.collisions++
         }
     }
 

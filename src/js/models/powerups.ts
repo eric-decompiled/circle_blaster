@@ -1,41 +1,29 @@
 export { PowerUp }
-import { Velocity } from './base'
+import { Circle, Point, Velocity } from './base'
 
 const powerUpImg = new Image()
 powerUpImg.src = './img/lightning.png'
+const imgwidth = 14
+const imgHeight = 19
 
-class PowerUp {
-    public x: number
-    public y: number
-    public width: number
-    public height: number
+class PowerUp extends Circle {
     public velocity: Velocity
     public inPlay: boolean
-    constructor({ width, height }) {
-        if (Math.random() < 0.5) {
-            this.x = Math.random() < 0.5 ? 0 - 7 : width - 7
-            this.y = Math.random() * height
-        } else {
-            this.x = Math.random() * height
-            this.y = Math.random() < 0.5 ? 0 - 9 : height - 9
-        }
-        const angle = Math.atan2(height / 2 - this.y, width / 2 - this.x)
+    constructor(spawnPoint: Point, target: Point) {
+        super(spawnPoint, (14 + 19) / 2, 'white')
+        const angle = Math.atan2(target.y / 2 - this.center.y, target.x - this.center.x)
         this.velocity = new Velocity(
             Math.cos(angle) + Math.random(),
             Math.sin(angle) + Math.random()
         )
-        this.width = 14
-        this.height = 19
         this.inPlay = false
     }
 
     draw(c: CanvasRenderingContext2D) {
-        c.drawImage(powerUpImg, this.x, this.y, 14, 18)
+        c.drawImage(powerUpImg, this.center.x, this.center.y, imgwidth, imgHeight)
     }
 
     update(c: CanvasRenderingContext2D) {
-        this.draw(c)
-        this.x += this.velocity.x
-        this.y += this.velocity.y
+        super.update(c)
     }
 }

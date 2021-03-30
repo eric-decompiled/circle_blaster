@@ -1,12 +1,12 @@
 import gsap from 'gsap'
 import { Circle, Point, Velocity } from './base'
-
+import { Player } from './player'
 export {
     Enemy,
     Boss
 }
 
-const minEnemySize = 15
+const minEnemySize = 20
 const enemyHitAudio = new Audio('./audio/hit.mp3')
 const enemyColors = [
     `hsl(0, 70%, 30%)`,
@@ -28,7 +28,7 @@ class Enemy extends Circle {
         const radius = Math.random() * (60 - 10) + 10
         super(
             spawnPoint,
-            radius + level * 10,
+            2 * (radius + level * 10),
             randomColor(),
         )
         this.points = 200 + level * 50
@@ -37,8 +37,8 @@ class Enemy extends Circle {
         this.inPlay = false
         const angle = this.center.angleTo(target)
         this.velocity = new Velocity(
-            Math.cos(angle) * this.baseSpeed * 8,
-            Math.sin(angle) * this.baseSpeed * 8
+            Math.cos(angle) * this.baseSpeed * 2,
+            Math.sin(angle) * this.baseSpeed * 2
         )
     }
 
@@ -47,70 +47,64 @@ class Enemy extends Circle {
         hitSound.volume = 0.33
         hitSound.play()
         this.radius -= amount
-        if (this.radius > minEnemySize) {
-            gsap.to(this, {
-                drawRadius: this.radius,
-                duration: 0.3
-            })
-            return true
-        } else {
-            gsap.to(this, {
-                alpha: 0.0,
-                duration: 0.20
-            })
-            return false
-        }
+        return this.radius > minEnemySize
+        // if (this.radius > minEnemySize) {
+        //     gsap.to(this, {
+        //         radius: this.radius - amount,
+        //         duration: 0.3
+        //     })
+        //     return true
+        // } else {
+        //     gsap.to(this, {
+        //         alpha: 0.0,
+        //         duration: 0.20
+        //     })
+        //     return false
+        // }
     }
 }
 
-class Boss {
-    private x: number
-    private y: number
+class Boss extends Circle {
     public points: number
     public radius: number
     public isBoss: true
     private baseSpeed: number
-    private color: string
-    private velocity: Velocity
     private frame: number
     private drawRadius: number
-    constructor(width: number, height: number) {
-        this.radius = 250
+    constructor(spawnPoint: Point, private player: Player) {
+        super(
+            spawnPoint,
+            250,
+            'deeppurple'
+        )
         this.drawRadius = 250
         this.baseSpeed = 1.2
         this.points = 10000
         this.frame = 0
         this.isBoss = true
-        if (Math.random() < 0.5) {
-            this.x = Math.random() < 0.5 ? 0 - this.radius : width + this.radius
-            this.y = Math.random() * height
-        } else {
-            this.x = Math.random() * height
-            this.y = Math.random() < 0.5 ? 0 - this.radius : height + this.radius
-        }
     }
 
     draw(c: CanvasRenderingContext2D) {
         c.beginPath()
-        c.arc(this.x, this.y, this.drawRadius, 0, Math.PI * 2, false)
+        c.arc(this.center.x, this.center.y, this.drawRadius, 0, Math.PI * 2, false)
         c.fillStyle = this.color
         c.fill()
         c.stroke()
     }
 
-    update(c: CanvasRenderingContext2D, targetX: number, targetY: number) {
+    update(c: CanvasRenderingContext2D) {
         this.draw(c)
         this.frame++
         let h = this.frame % 360
         let s = (this.frame % 20) + 40
         this.color = `hsl(${h}deg,${s}%,50%)`
-        const angle = Math.atan2(targetY - this.y, targetX - this.x)
+        const angle = this.center.angleTo(this.player.center)
         this.velocity = new Velocity(
             Math.cos(angle) * this.baseSpeed,
             Math.sin(angle) * this.baseSpeed
         )
-        this.x += this.velocity.x
-        this.y += this.velocity.y
+        this.center.x += this.velocity.x
+        this.center.y += this.velocity.y
     }
 
     hit(amount: number) {

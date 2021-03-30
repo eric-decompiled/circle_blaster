@@ -1,27 +1,6 @@
-import { Circle, Point } from "./base"
 import { Velocity } from './base'
-export { Projectile, Particle, BackgroundParticle }
+export { Particle, BackgroundParticle }
 
-class Projectile extends Circle {
-    public radius: number
-    public color: string
-    public power: number
-    constructor(x: number, y: number, radius: number, color: string, velocity: Velocity, power: number) {
-        super(
-            new Point(x, y),
-            radius,
-            color
-        )
-        this.velocity = velocity
-        this.power = power
-    }
-
-    update(c: CanvasRenderingContext2D) {
-        this.draw(c)
-        this.center.x += this.velocity.x
-        this.center.y += this.velocity.y
-    }
-}
 
 class Particle {
     private x: number

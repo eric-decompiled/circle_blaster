@@ -1,8 +1,8 @@
 import gsap from 'gsap'
-import { Player } from './models/player'
+import { Player, Projectile } from './models/player'
 import { Enemy, Boss } from './models/enemies'
 import { PowerUp } from './models/powerups'
-import { Projectile, Particle, BackgroundParticle } from './models/particles'
+import { Particle, BackgroundParticle } from './models/particles'
 import { Point, Velocity } from './models/base'
 
 // HTML elements
@@ -22,7 +22,7 @@ const victoryEl = document.querySelector('#victoryEl') as HTMLElement
 const albatrossSongURL = './audio/albatross.mp3'
 const movingMiamiSongURL = './audio/moving_to_miami.mp3'
 const inCloudsSongURL = './audio/in_clouds.mp3'
-let currentSong = inCloudsSongURL
+let currentSong = movingMiamiSongURL
 const backgroundMusic = new Audio(currentSong)
 backgroundMusic.volume = 0.66
 backgroundMusic.currentTime = 0
@@ -62,6 +62,7 @@ const comboBreak = new Audio('./audio/destroy.mp3')
 const destroyEnemy = new Audio('./audio/continue.mp3')
 const obtainPowerupAudio = new Audio('./audio/powerup.mp3')
 const alarmAudio = new Audio('./audio/warning.mp3')
+const maxShotsAudio = new Audio('./audio/cancel.mp3')
 
 backgroundMusic.addEventListener('ended', nextSong)
 victorySong.addEventListener('ended', nextSong)
@@ -85,8 +86,8 @@ const mouse = {
 const c = canvas.getContext('2d')
 canvas.width = innerWidth
 canvas.height = innerHeight - inforBarEl.clientHeight
-let topLeft = { x: 0, y: 0 }
-let bottomRight = { x: 0, y: 0 }
+let topLeft: Point
+let bottomRight: Point
 let animationId: number
 let player: Player
 let powerUps: PowerUp[]
@@ -111,14 +112,14 @@ let startTime: any
 function init() {
     canvas.width = innerWidth
     canvas.height = innerHeight - inforBarEl.clientHeight
-    topLeft = {
-        x: 0 + padding,
-        y: 0 + padding
-    }
-    bottomRight = {
-        x: canvas.width - padding,
-        y: canvas.height - padding
-    }
+    topLeft = new Point(
+        padding,
+        padding
+    )
+    bottomRight = new Point(
+        canvas.width - padding,
+        canvas.height - padding
+    )
     score = 0
     combo = 0
     frame = 0
@@ -157,40 +158,40 @@ function init() {
 
 function animate() {
     animationId = requestAnimationFrame(animate)
-    frame++
     c.fillStyle = 'rgba(0, 0, 0, 0.5)' // create motion blur effect
     c.fillRect(0, 0, canvas.width, canvas.height)
-    if (frame % 300 === 0) {
+    if (frame % (750 + level * 100) === 0) {
         setLevel(score)
         spawnEnemies(level)
         if (Math.random() < 0.20) spawnPowerUp()
     }
-    lightUpBackgroundParticles()
+    frame++
+    updateParticles()
     updatePowerups()
     updateEnemies()
+    updateProjectiles()
     player.update(c)
-    if (player.powerUp === 'Automatic' && mouse.down && frame % 4 === 0) {
+    if (player.powerUp === 'Automatic' && mouse.down && frame % 12 === 0) {
         projectiles.push(player.shoot(mouse))
     }
-    cleanup()
 }
+
 
 function updateEnemies() {
     enemies.forEach((enemy, index) => {
         const dist = player.distanceBetween(enemy)
         if (dist < 1) endGame()
         enemy.update(c)
-
         // check if enemy hit any projectiles
-        projectiles.forEach((projectile, projectileIndex) => {
+        projectiles.forEach((projectile) => {
             const dist = projectile.distanceBetween(enemy)
             if (dist < 0.1) {
                 const splashAmount = Math.max(16, enemy.radius / 6)
                 const splashAngle = projectile.center.angleTo(enemy.center)
                 projectile.resolveCollision(enemy)
                 hitSplash(projectile.center, enemy.color, splashAmount, splashAngle)
+                projectile.color = enemy.color
                 // remove projectile on hit
-                // setTimeout(() => projectiles = projectiles.filter(p => p.id !== projectile.id), 0)
                 if (enemy.hit(projectile.power)) {
                     // i.e. enemy survived hit
                     addScore(100, projectile)
@@ -204,8 +205,10 @@ function updateEnemies() {
                     hitSplash(projectile.center, enemy.color, splashAmount, splashAngle)
                     addScore(enemy.points, projectile)
                     // remove enemy after some time for it to fade 
+                    setTimeout(() => projectiles = projectiles.filter(p => p.id !== projectile.id), 0)
                     setTimeout(() => enemies = enemies.filter(e => e.id !== enemy.id), 100)
                 }
+                projectile.power *= 2.5
             }
         })
         // bounce off walls
@@ -232,8 +235,7 @@ function updateEnemies() {
 
 function updatePowerups() {
     powerUps.forEach((powerUp, index) => {
-        const dist = Math.hypot(player.center.x - powerUp.x, player.center.y - powerUp.y)
-        if (dist - player.radius - powerUp.width / 2 < 1) {
+        if (powerUp.distanceBetween(player) < 1) {
             let obtainSound = obtainPowerupAudio.cloneNode() as HTMLAudioElement
             obtainSound.play()
             player.powerUp = 'Automatic'
@@ -247,8 +249,8 @@ function updatePowerups() {
         } else {
             powerUp.update(c)
         }
-        const collidedWithX = powerUp.x - powerUp.width / 2 <= topLeft.x || powerUp.x + powerUp.width / 2 >= bottomRight.x
-        const collidedWithY = powerUp.y - powerUp.height / 3 <= topLeft.y || powerUp.y + powerUp.height / 2 >= bottomRight.x
+        const collidedWithX = powerUp.center.x - powerUp.radius / 2 <= topLeft.x || powerUp.center.x + powerUp.radius / 2 >= bottomRight.x
+        const collidedWithY = powerUp.center.y - powerUp.radius / 3 <= topLeft.y || powerUp.center.y + powerUp.radius / 2 >= bottomRight.x
         if (powerUp.inPlay) {
             if (collidedWithX) {
                 powerUp.velocity.x = -powerUp.velocity.x
@@ -259,26 +261,6 @@ function updatePowerups() {
         } else {
             powerUp.inPlay = !(collidedWithX || collidedWithY)
         }
-    })
-}
-
-function lightUpBackgroundParticles() {
-    backgroundParticles.forEach(bp => {
-        const dist = Math.hypot(player.center.x - bp.x, player.center.y - bp.y)
-        const hideRadius = 125
-        if (dist < hideRadius) {
-            // hide close particles, illuminate radius
-            bp.alpha = dist < 70 ? 0 : 0.35
-            if (!bp.touched) {
-                litCount += 1
-                bp.touched = true
-                if (litCount / particleCount > 0.60) {
-                    player.unleash(bp.color)
-                    backgroundParticles.forEach(bp => bp.touch())
-                }
-            }
-        }
-        bp.update(c)
     })
 }
 
@@ -337,7 +319,7 @@ function spawnBoss() {
         })
     }, 6000)
     setTimeout(() => bossMusic.play(), 10000)
-    let pushBoss = () => enemies.push(new Boss(canvas.width, canvas.height))
+    let pushBoss = () => enemies.push(new Boss(outOfBounds(), player))
     setTimeout(pushBoss, 11000)
 }
 
@@ -350,17 +332,17 @@ function spawnEnemies(level: number) {
 }
 
 function setLevel(score: number) {
-    if (score > 5000) level = 2
-    if (score > 10000) level = 3
-    if (score > 25000) level = 4
-    if (score > 50000) level = 5
+    if (score > 1000) level = 2
+    if (score > 2500) level = 3
+    if (score > 5000) level = 4
+    if (score > 10000) level = 5
     if (score > 250000) level = 6
     if (score > 1000000) level = 7
     levelEl.innerHTML = level.toString()
 }
 
 function spawnPowerUp() {
-    powerUps.push(new PowerUp(canvas))
+    powerUps.push(new PowerUp(outOfBounds(), new Point(canvas.width / 2, canvas.height / 2)))
 }
 
 function endGame() {
@@ -417,22 +399,63 @@ function winGame() {
     postEvent('game won', endStats())
 }
 
+function updateParticles() {
+    // hit effects
+    particles = particles.filter(p => p.alpha > 0)
+    particles.forEach(p => p.update(c))
 
-function cleanup() {
-    // remove faded particles
-    particles.forEach((p, i) => p.alpha <= 0 ? particles.splice(i, 1) : p.update(c))
-    // remove projectiles out of bounds
-    projectiles.forEach((projectile, index) => {
-        projectile.update(c)
-        if (
-            projectile.center.x + projectile.radius < 0 ||
-            projectile.center.x - projectile.radius > canvas.width ||
-            projectile.center.y + projectile.radius < 0 ||
-            projectile.center.y - projectile.radius > canvas.height
-        ) {
-            setTimeout(() => projectiles.splice(index, 1), 0)
+    // background dots
+    backgroundParticles.forEach(bp => {
+        const dist = Math.hypot(player.center.x - bp.x, player.center.y - bp.y)
+        const hideRadius = 125
+        if (dist < hideRadius) {
+            // hide close particles, illuminate radius
+            bp.alpha = dist < 70 ? 0 : 0.35
+            if (!bp.touched) {
+                litCount += 1
+                bp.touched = true
+                if (litCount / particleCount > 0.60) {
+                    player.unleash(bp.color)
+                    backgroundParticles.forEach(bp => bp.touch())
+                }
+            }
         }
+        bp.update(c)
     })
+}
+
+
+function updateProjectiles() {
+    projectiles.forEach(projectile => {
+        const collidedWithX = projectile.center.x - projectile.radius + projectile.velocity.x < topLeft.x || projectile.center.x + projectile.radius + projectile.velocity.x > bottomRight.x
+        const collidedWithY = projectile.center.y - projectile.radius + projectile.velocity.y < topLeft.y || projectile.center.y + projectile.radius + projectile.velocity.y > bottomRight.y
+        if (collidedWithX) {
+            projectile.velocity.x = -projectile.velocity.x
+            projectile.collisions++
+        }
+        if (collidedWithY) {
+            projectile.velocity.y = -projectile.velocity.y
+            projectile.collisions++
+        }
+        if (projectile.collisions > 5) setTimeout(() => {
+            hitSplash(projectile.center, projectile.color, 24, Math.random() * Math.PI * 2)
+            projectiles = projectiles.filter(p => p.id !== projectile.id)
+        }, 0)
+        projectile.update(c)
+    })
+
+    // remove projectiles out of bounds
+    // projectiles.forEach((projectile, index) => {
+    //     projectile.update(c)
+    //     if (
+    //         projectile.center.x + projectile.radius < 0 ||
+    //         projectile.center.x - projectile.radius > canvas.width ||
+    //         projectile.center.y + projectile.radius < 0 ||
+    //         projectile.center.y - projectile.radius > canvas.height
+    //     ) {
+    //         setTimeout(() => projectiles.splice(index, 1), 0)
+    //     }
+    // })
 }
 
 function hitSplash(p: Point, color: string, amount: number, angle: number) {
@@ -542,7 +565,14 @@ addEventListener('touchend', () => {
 addEventListener('click', (event) => {
     mouse.x = event.clientX
     mouse.y = event.clientY
-    if (scene.active) projectiles.push(player.shoot(mouse))
+    if (scene.active) {
+        if (projectiles.length < player.maxShots) {
+
+            projectiles.push(player.shoot(mouse))
+        } else {
+            maxShotsAudio.play()
+        }
+    }
 })
 
 addEventListener('resize', () => {

@@ -1,8 +1,7 @@
-import { Projectile } from './particles'
 import { Circle, Point, Velocity } from './base'
 const shootAudio = new Audio('./audio/altShoot.mp3')
 const unleashedAudio = new Audio('./audio/unlock.mp3')
-export { Player }
+export { Player, Projectile }
 const playerRadius = 10
 
 class Player extends Circle {
@@ -12,6 +11,7 @@ class Player extends Circle {
     private speed: number
     private power: number
     private shotSpeed: number
+    public maxShots: number
 
     constructor(
         private topLeft: any,
@@ -28,10 +28,11 @@ class Player extends Circle {
             color
         )
         this.powerUp = ''
-        this.friction = 0.92
-        this.speed = 0.70
+        this.friction = 0.94
+        this.speed = 0.50
         this.shotSpeed = 6
         this.power = 12
+        this.maxShots = 10
         this.unleashedColor = null
     }
 
@@ -56,7 +57,11 @@ class Player extends Circle {
         let s = shootAudio.cloneNode() as HTMLAudioElement
         s.volume = 0.5
         s.play()
-        return new Projectile(this.center.x, this.center.y, 5, this.color, velocity, this.power)
+        const spawnAt = new Point(
+            this.center.x + velocity.x,
+            this.center.y + velocity.y
+        )
+        return new Projectile(spawnAt, 5, this.color, velocity, this.power)
     }
 
     update(c: CanvasRenderingContext2D) {
@@ -88,8 +93,9 @@ class Player extends Circle {
 
     unleash(unleashedColor: string) {
         if (!this.unleashedColor) {
-            this.speed += 0.33
-            this.shotSpeed += 6
+            this.speed += 0.15
+            this.shotSpeed += 2
+            this.maxShots += 10
             unleashedAudio.play()
             this.unleashedColor = unleashedColor
         }
@@ -97,9 +103,25 @@ class Player extends Circle {
 
     leash() {
         if (this.unleashedColor) {
-            this.speed -= 0.33
-            this.shotSpeed -= 6
+            this.speed -= 0.15
+            this.shotSpeed -= 2
+            this.maxShots -= 10
             this.unleashedColor = null
         }
+    }
+}
+
+class Projectile extends Circle {
+    public radius: number
+    public color: string
+    public power: number
+    constructor(center: Point, radius: number, color: string, velocity: Velocity, power: number) {
+        super(
+            center,
+            radius,
+            color
+        )
+        this.velocity = velocity
+        this.power = power
     }
 }
