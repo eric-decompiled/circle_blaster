@@ -1,4 +1,5 @@
 export { PowerUp }
+import { Velocity } from './base'
 
 const powerUpImg = new Image()
 powerUpImg.src = './img/lightning.png'
@@ -19,11 +20,10 @@ class PowerUp {
             this.y = Math.random() < 0.5 ? 0 - 9 : height - 9
         }
         const angle = Math.atan2(height / 2 - this.y, width / 2 - this.x)
-        const velocity = {
-            x: Math.cos(angle) + Math.random(),
-            y: Math.sin(angle) + Math.random()
-        }
-        this.velocity = velocity
+        this.velocity = new Velocity(
+            Math.cos(angle) + Math.random(),
+            Math.sin(angle) + Math.random()
+        )
         this.width = 14
         this.height = 19
         this.inPlay = false

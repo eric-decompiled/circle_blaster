@@ -1,33 +1,25 @@
+import { Circle, Point } from "./base"
+import { Velocity } from './base'
 export { Projectile, Particle, BackgroundParticle }
 
-class Projectile {
-    public x: number
-    public y: number
+class Projectile extends Circle {
     public radius: number
     public color: string
     public power: number
-    private velocity: Velocity
     constructor(x: number, y: number, radius: number, color: string, velocity: Velocity, power: number) {
-        this.x = x
-        this.y = y
-        this.radius = radius
-        this.color = color
+        super(
+            new Point(x, y),
+            radius,
+            color
+        )
         this.velocity = velocity
         this.power = power
     }
 
-    draw(c: CanvasRenderingContext2D) {
-        c.beginPath()
-        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
-        c.fillStyle = this.color
-        c.fill()
-        c.restore()
-    }
-
     update(c: CanvasRenderingContext2D) {
         this.draw(c)
-        this.x += this.velocity.x
-        this.y += this.velocity.y
+        this.center.x += this.velocity.x
+        this.center.y += this.velocity.y
     }
 }
 
@@ -104,9 +96,9 @@ class BackgroundParticle {
         // shimmer effect
         if (this.touched) {
             if (this.alpha > this.initialAlpha) {
-                this.alpha -= Math.random()*0.05
+                this.alpha -= Math.random() * 0.05
             } else if (this.alpha < this.initialAlpha) {
-                this.alpha += Math.random()*0.10
+                this.alpha += Math.random() * 0.10
             }
         }
     }

@@ -3,6 +3,7 @@ import { Player } from './models/player'
 import { Enemy, Boss } from './models/enemies'
 import { PowerUp } from './models/powerups'
 import { Projectile, Particle, BackgroundParticle } from './models/particles'
+import { Point, Velocity } from './models/base'
 
 // HTML elements
 const canvas = document.querySelector('canvas')
@@ -21,7 +22,7 @@ const victoryEl = document.querySelector('#victoryEl') as HTMLElement
 const albatrossSongURL = './audio/albatross.mp3'
 const movingMiamiSongURL = './audio/moving_to_miami.mp3'
 const inCloudsSongURL = './audio/in_clouds.mp3'
-let currentSong = albatrossSongURL
+let currentSong = inCloudsSongURL
 const backgroundMusic = new Audio(currentSong)
 backgroundMusic.volume = 0.66
 backgroundMusic.currentTime = 0
@@ -101,7 +102,7 @@ let litCount: number
 let particleCount: number
 let powerupTimeout = setTimeout(() => { }, 0) // let type inference do its thing
 const spacing = 30
-const padding = 50
+const padding = 0
 
 // stats
 let longestCombo: number
@@ -139,7 +140,7 @@ function init() {
     backgroundMusic.play()
     scene.boss = false
     levelEl.innerHTML = level.toString()
-    player = new Player(topLeft, bottomRight, 10, 'ivory')
+    player = new Player(topLeft, bottomRight, 'ivory', keys)
     projectiles = []
     particles = []
     enemies = []
@@ -167,7 +168,7 @@ function animate() {
     lightUpBackgroundParticles()
     updatePowerups()
     updateEnemies()
-    player.update(c, keys)
+    player.update(c)
     if (player.powerUp === 'Automatic' && mouse.down && frame % 4 === 0) {
         projectiles.push(player.shoot(mouse))
     }
@@ -176,69 +177,62 @@ function animate() {
 
 function updateEnemies() {
     enemies.forEach((enemy, index) => {
-        const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y)
-        if (dist - enemy.radius - player.radius < 1) endGame()
-
-        enemy.update(c, player.x, player.y)
+        const dist = player.distanceBetween(enemy)
+        if (dist < 1) endGame()
+        enemy.update(c)
 
         // check if enemy hit any projectiles
         projectiles.forEach((projectile, projectileIndex) => {
-            const dist = Math.hypot(projectile.x - enemy.x, projectile.y - enemy.y)
-            if (dist - enemy.radius - projectile.radius < 0.1 && enemy.radius > 0) {
+            const dist = projectile.distanceBetween(enemy)
+            if (dist < 0.1) {
                 const splashAmount = Math.max(16, enemy.radius / 6)
-                const splashAngle = Math.atan2(projectile.y - enemy.y, projectile.x - enemy.x)
-                hitSplash(projectile.x, projectile.y, enemy.color, splashAmount, splashAngle)
-                setTimeout(() => projectiles.splice(projectileIndex, 1), 0)
+                const splashAngle = projectile.center.angleTo(enemy.center)
+                projectile.resolveCollision(enemy)
+                hitSplash(projectile.center, enemy.color, splashAmount, splashAngle)
+                // remove projectile on hit
+                // setTimeout(() => projectiles = projectiles.filter(p => p.id !== projectile.id), 0)
                 if (enemy.hit(projectile.power)) {
                     // i.e. enemy survived hit
                     addScore(100, projectile)
                 } else {
-                    enemy.color === scene.color ? continueCombo() : breakCombo(enemy)
+                    enemy.color === scene.color ?
+                        continueCombo() :
+                        breakCombo(enemy)
                     if (enemy.isBoss) winGame()
                     // extra splash for kill
                     const splashAmount = Math.random() * 12 + 6
-                    hitSplash(projectile.x, projectile.y, enemy.color, splashAmount, splashAngle)
+                    hitSplash(projectile.center, enemy.color, splashAmount, splashAngle)
                     addScore(enemy.points, projectile)
-                    setTimeout(() => {
-                        const enemyIndex = enemies.findIndex(e => e.id === enemy.id)
-                        if (enemyIndex >= 0) enemies.splice(enemyIndex, 1)
-                    }, 250)
+                    // remove enemy after some time for it to fade 
+                    setTimeout(() => enemies = enemies.filter(e => e.id !== enemy.id), 100)
                 }
             }
         })
-        // check for collisions with other enemies. For loop to not double collide.
-        for (let i = index + 1; i < enemies.length; i++) {
-            let e = enemies[i]
-            const dist = Math.hypot(enemy.x - e.x, enemy.y - e.y)
-            if (dist - enemy.radius - e.radius < 0.1 && enemy.radius > 0) {
-                resolveCollision(e, enemy)
-            }
-        }
         // bounce off walls
-        const collidedWithX = enemy.x - enemy.radius + enemy.velocity.x < topLeft.x || enemy.x + enemy.radius + enemy.velocity.x > bottomRight.x
-        const collidedWithY = enemy.y - enemy.radius + enemy.velocity.y < topLeft.y || enemy.y + enemy.radius + enemy.velocity.y > bottomRight.y
+        const collidedWithX = enemy.center.x - enemy.radius + enemy.velocity.x < topLeft.x || enemy.center.x + enemy.radius + enemy.velocity.x > bottomRight.x
+        const collidedWithY = enemy.center.y - enemy.radius + enemy.velocity.y < topLeft.y || enemy.center.y + enemy.radius + enemy.velocity.y > bottomRight.y
         if (enemy.inPlay) {
             if (collidedWithX) {
                 enemy.velocity.x = -enemy.velocity.x
-                if (enemy.type === 'oscilator') {
-                    enemy.drive.x = -enemy.drive.x
-                }
             }
             if (collidedWithY) {
                 enemy.velocity.y = -enemy.velocity.y
-                if (enemy.type === 'oscilator') {
-                    enemy.drive.y = -enemy.drive.y
-                }
             }
         } else {
             enemy.inPlay = !(collidedWithX || collidedWithY)
         }
+        // check for collisions with other enemies. For loop to not double collide.
+        for (let i = index + 1; i < enemies.length; i++) {
+            const e = enemies[i]
+            if (enemy.distanceBetween(e) < 0.1) e.resolveCollision(enemy)
+        }
     })
 }
 
+
 function updatePowerups() {
     powerUps.forEach((powerUp, index) => {
-        const dist = Math.hypot(player.x - powerUp.x, player.y - powerUp.y)
+        const dist = Math.hypot(player.center.x - powerUp.x, player.center.y - powerUp.y)
         if (dist - player.radius - powerUp.width / 2 < 1) {
             let obtainSound = obtainPowerupAudio.cloneNode() as HTMLAudioElement
             obtainSound.play()
@@ -270,7 +264,7 @@ function updatePowerups() {
 
 function lightUpBackgroundParticles() {
     backgroundParticles.forEach(bp => {
-        const dist = Math.hypot(player.x - bp.x, player.y - bp.y)
+        const dist = Math.hypot(player.center.x - bp.x, player.center.y - bp.y)
         const hideRadius = 125
         if (dist < hideRadius) {
             // hide close particles, illuminate radius
@@ -288,73 +282,6 @@ function lightUpBackgroundParticles() {
     })
 }
 
-/**
- * Rotates coordinate system for velocities
- *
- * Takes velocities and alters them as if the coordinate system they're on was rotated
- *
- * @param  Object | velocity | The velocity of an individual particle
- * @param  Float  | angle    | The angle of collision between two objects in radians
- * @return Object | The altered x and y velocities after the coordinate system has been rotated
- */
-
-function rotate(velocity, angle) {
-    const rotatedVelocities = {
-        x: velocity.x * Math.cos(angle) - velocity.y * Math.sin(angle),
-        y: velocity.x * Math.sin(angle) + velocity.y * Math.cos(angle)
-    };
-
-    return rotatedVelocities;
-}
-
-/**
- * Swaps out two colliding particles' x and y velocities after running through
- * an elastic collision reaction equation
- *
- * @param  Object | particle      | A particle object with x and y coordinates, plus velocity
- * @param  Object | otherParticle | A particle object with x and y coordinates, plus velocity
- * @return Null | Does not return a value
- */
-
-function resolveCollision(particle, otherParticle) {
-    const xVelocityDiff = particle.velocity.x - otherParticle.velocity.x;
-    const yVelocityDiff = particle.velocity.y - otherParticle.velocity.y;
-
-    const xDist = otherParticle.x - particle.x;
-    const yDist = otherParticle.y - particle.y;
-    debugger
-    // Prevent accidental overlap of particles
-    if (xVelocityDiff * xDist + yVelocityDiff * yDist >= 0) {
-
-        // Grab angle between the two colliding particles
-        const angle = -Math.atan2(otherParticle.y - particle.y, otherParticle.x - particle.x);
-
-        // Store mass in var for better readability in collision equation
-        // assumes radius always equal mass
-        const m1 = particle.radius;
-        const m2 = otherParticle.radius;
-
-        // Velocity before equation
-        const u1 = rotate(particle.velocity, angle);
-        const u2 = rotate(otherParticle.velocity, angle);
-
-        // Velocity after 1d collision equation
-        const v1 = { x: u1.x * (m1 - m2) / (m1 + m2) + u2.x * 2 * m2 / (m1 + m2), y: u1.y };
-        const v2 = { x: u2.x * (m1 - m2) / (m1 + m2) + u1.x * 2 * m2 / (m1 + m2), y: u2.y };
-
-        // Final velocity after rotating axis back to original location
-        const vFinal1 = rotate(v1, -angle);
-        const vFinal2 = rotate(v2, -angle);
-
-        // Swap particle velocities for realistic bounce effect
-        particle.velocity.x = vFinal1.x;
-        particle.velocity.y = vFinal1.y;
-
-        otherParticle.velocity.x = vFinal2.x;
-        otherParticle.velocity.y = vFinal2.y;
-    }
-}
-
 function addScore(basePoints: number, projectile: Projectile) {
     let multiplier = 1 + combo / 10
     const points = (basePoints * multiplier) | 0 // bitwise or 0 casts to int
@@ -369,8 +296,8 @@ function createScoreLabel(projectile: Projectile, score: number) {
     scoreLabel.style.position = 'absolute'
     scoreLabel.style.color = 'white'
     scoreLabel.style.userSelect = 'none'
-    scoreLabel.style.left = projectile.x + 'px'
-    scoreLabel.style.top = projectile.y + 'px'
+    scoreLabel.style.left = projectile.center.x + 'px'
+    scoreLabel.style.top = projectile.center.y + 'px'
     document.body.appendChild(scoreLabel)
     gsap.to(scoreLabel, {
         opacity: 0,
@@ -383,7 +310,7 @@ function createScoreLabel(projectile: Projectile, score: number) {
 }
 
 function spawnEnemy(level: number) {
-    enemies.push(new Enemy(canvas.width, canvas.height, level))
+    enemies.push(new Enemy(outOfBounds(), player.center, level))
 }
 
 function spawnBoss() {
@@ -498,31 +425,31 @@ function cleanup() {
     projectiles.forEach((projectile, index) => {
         projectile.update(c)
         if (
-            projectile.x + projectile.radius < 0 ||
-            projectile.x - projectile.radius > canvas.width ||
-            projectile.y + projectile.radius < 0 ||
-            projectile.y - projectile.radius > canvas.height
+            projectile.center.x + projectile.radius < 0 ||
+            projectile.center.x - projectile.radius > canvas.width ||
+            projectile.center.y + projectile.radius < 0 ||
+            projectile.center.y - projectile.radius > canvas.height
         ) {
             setTimeout(() => projectiles.splice(index, 1), 0)
         }
     })
 }
 
-function hitSplash(x: number, y: number, color: string, amount: number, angle: number) {
+function hitSplash(p: Point, color: string, amount: number, angle: number) {
     // particles should be bias to break away from enemy
     const xBias = Math.cos(angle) * 1.1
     const yBias = Math.sin(angle) * 1.1
     for (let i = 0; i < amount; i++) {
         particles.push(
             new Particle(
-                x,
-                y,
+                p.x,
+                p.y,
                 Math.random() * 2,
                 color,
-                {
-                    x: (Math.random() - 0.5) + xBias,
-                    y: (Math.random() - 0.5) + yBias
-                }
+                new Velocity(
+                    (Math.random() - 0.5) + xBias,
+                    (Math.random() - 0.5) + yBias
+                )
             )
         )
     }
@@ -674,4 +601,17 @@ function postEvent(name: string, payload: object) {
     // } else {
     //     console.log('dev tracking: ', name, payload)
     // }
+}
+
+function outOfBounds(radius = 100): Point {
+    // assume radius since it should be big enough
+    if (Math.random() < 0.5) {
+        let x = Math.random() < 0.5 ? 0 - radius : canvas.width + radius,
+            y = Math.random() * canvas.height
+        return new Point(x, y)
+    } else {
+        let x = Math.random() * canvas.height,
+            y = Math.random() < 0.5 ? 0 - radius : canvas.height + radius
+        return new Point(x, y)
+    }
 }
