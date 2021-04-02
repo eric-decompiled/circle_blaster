@@ -1,21 +1,15 @@
-import { Velocity } from './base'
+import { Velocity, Color, Point, Circle } from './base'
 export { Particle, BackgroundParticle }
 
-
 class Particle {
-    private x: number
-    private y: number
-    private radius: number
-    public color: string
     public alpha: number
-    private velocity: Velocity
     private friction: number
-    constructor(x: number, y: number, radius: number, color: string, velocity: Velocity) {
-        this.x = x
-        this.y = y
-        this.radius = radius
-        this.color = color
-        this.velocity = velocity
+    constructor(
+        public center: Point,
+        public radius: number,
+        public color: Color,
+        public velocity: Velocity
+    ) {
         this.alpha = 1
         this.friction = 0.99
     }
@@ -24,54 +18,48 @@ class Particle {
         c.save()
         c.globalAlpha = this.alpha
         c.beginPath()
-        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
-        c.fillStyle = this.color
+        c.arc(this.center.x, this.center.y, this.radius, 0, Math.PI * 2, false)
+        c.fillStyle = this.color.toString()
         c.fill()
         c.restore()
     }
 
     update(c: CanvasRenderingContext2D) {
+        this.center.x += this.velocity.x
+        this.center.y += this.velocity.y
         this.velocity.x *= this.friction
         this.velocity.y *= this.friction
-        this.x += this.velocity.x
-        this.y += this.velocity.y
         this.alpha -= 0.01
         this.draw(c)
     }
 }
 
-class BackgroundParticle {
-    public x: number
-    public y: number
-    public color: string
+class BackgroundParticle extends Circle {
     public alpha: number
     public initialAlpha: number
     private shimmerAlpha: number
     public touched: boolean
-    private radius: number
-    constructor(x: number, y: number, radius: number, color: string) {
-        this.x = x
-        this.y = y
-        this.radius = radius
-        this.color = color
+    constructor(
+        center: Point,
+        radius: number,
+        color: Color
+    ) {
+        super(
+            center,
+            radius,
+            color
+        )
         this.alpha = 0.075
         this.initialAlpha = this.alpha
         this.shimmerAlpha = this.alpha + 0.2
         this.touched = false
     }
 
-    draw(c: CanvasRenderingContext2D) {
+    update(c: CanvasRenderingContext2D) {
         c.save()
         c.globalAlpha = this.alpha
-        c.beginPath()
-        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
-        c.fillStyle = this.color
-        c.fill()
-        c.restore()
-    }
-
-    update(c: CanvasRenderingContext2D) {
         this.draw(c)
+        c.restore()
         // shimmer effect
         if (this.touched) {
             if (this.alpha > this.initialAlpha) {

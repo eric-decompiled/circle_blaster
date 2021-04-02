@@ -1,15 +1,65 @@
 let id = 1
-const absorbtion = 0.50
+const absorbtion = 1
+
+export class Point {
+    constructor(
+        public x: number,
+        public y: number
+    ) { }
+
+    angleTo(p: Point): number {
+        return Math.atan2(p.y - this.y, p.x - this.x)
+    }
+
+    distanceTo(p: Point): number {
+        return Math.hypot(this.x - p.x, this.y - p.y)
+    }
+
+    clone() {
+        return new Point(this.x, this.y)
+    }
+
+}
+
+export class Velocity {
+    constructor(
+        public x: number,
+        public y: number
+    ) { }
+
+    speed(): number { return Math.hypot(this.x, this.y) }
+}
+
+
+export class Color {
+    constructor(
+        public h: number,
+        public s: number,
+        public l: number
+    ) { }
+    clone(): Color { return new Color(this.h, this.s, this.l) }
+    toString() { return `hsl(${this.h}deg, ${this.s}%, ${this.l}%)` }
+}
+
+const colors = [
+    new Color(0, 70, 30),
+    new Color(90, 70, 30),
+    new Color(220, 70, 30),
+    new Color(36, 70, 30),
+]
+export const randomColor = () => colors[Math.floor((Math.random() * colors.length))]
+
 export abstract class Circle {
     readonly id: number
     public velocity: Velocity
+    protected border: Color
     private mass: number
     constructor(
         public center: Point,
         public radius: number,
-        public color: string,
+        public color: Color,
         public collisions = 0,
-        protected friction = 0.99995
+        protected friction = 0.9995
     ) {
         this.id = id++
         this.velocity = new Velocity(0, 0)
@@ -19,8 +69,12 @@ export abstract class Circle {
     protected draw(c: CanvasRenderingContext2D): void {
         c.beginPath()
         c.arc(this.center.x, this.center.y, Math.max(1, this.radius), 0, Math.PI * 2, false)
-        c.fillStyle = this.color
+        c.fillStyle = this.color.toString()
         c.fill()
+        if (this.border) {
+            c.strokeStyle = this.border.toString()
+            c.stroke()
+        }
     }
 
     public update(c: CanvasRenderingContext2D): void {
@@ -74,45 +128,18 @@ export abstract class Circle {
             const vFinal1 = rotate(v1, -angle);
             const vFinal2 = rotate(v2, -angle);
 
+            this.collisions++
+            other.collisions++
             // Swap particle velocities for realistic bounce effect
             this.velocity = vFinal1;
             other.velocity = vFinal2;
-            this.collisions++
-            other.collisions++
         }
     }
-
 }
+
 function rotate(velocity: Velocity, angle: number): Velocity {
     return new Velocity(
         velocity.x * Math.cos(angle) - velocity.y * Math.sin(angle),
         velocity.x * Math.sin(angle) + velocity.y * Math.cos(angle)
     )
-}
-
-export class Point {
-    constructor(
-        public x: number,
-        public y: number
-    ) { }
-
-    angleTo(p: Point): number {
-        return Math.atan2(p.y - this.y, p.x - this.x)
-    }
-
-    distanceTo(p: Point): number {
-        return Math.hypot(this.x - p.x, this.y - p.y)
-    }
-
-}
-
-export class Velocity {
-    constructor(
-        public x: number,
-        public y: number
-    ) { }
-
-    speed(): number {
-        return Math.hypot(this.x, this.y)
-    }
 }

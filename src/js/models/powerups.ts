@@ -1,5 +1,5 @@
 export { PowerUp }
-import { Circle, Point, Velocity } from './base'
+import { Circle, Point, randomColor, Velocity } from './base'
 
 const powerUpImg = new Image()
 powerUpImg.src = './img/lightning.png'
@@ -10,7 +10,7 @@ class PowerUp extends Circle {
     public velocity: Velocity
     public inPlay: boolean
     constructor(spawnPoint: Point, target: Point) {
-        super(spawnPoint, (14 + 19) / 2, 'white')
+        super(spawnPoint, (14 + 19) / 2, randomColor() )
         const angle = Math.atan2(target.y / 2 - this.center.y, target.x - this.center.x)
         this.velocity = new Velocity(
             Math.cos(angle) + Math.random(),
