@@ -4,10 +4,10 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 module.exports = {
   mode: 'development',
   devtool: 'inline-source-map',
-  entry: './src/js/canvas.ts',
+  entry: './src/js/game.ts',
   output: {
     path: __dirname + '/dist/',
-    filename: './js/canvas.bundle.js'
+    filename: './js/game.bundle.js'
   },
   module: {
     rules: [

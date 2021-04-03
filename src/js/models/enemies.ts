@@ -88,7 +88,6 @@ class OscilatingEnemy extends Enemy {
 
 class Boss extends Enemy {
     public points: number
-    public radius: number
     public isBoss: true
     private frame: number
     private drawRadius: number
@@ -134,7 +133,7 @@ class Boss extends Enemy {
         const hitSound = enemyHitAudio.cloneNode() as HTMLAudioElement
         hitSound.volume = 0.50
         hitSound.play()
-        this.radius -= 1
+        this.radius -= 25
         if (this.radius > minEnemySize) {
             gsap.to(this, {
                 drawRadius: this.radius

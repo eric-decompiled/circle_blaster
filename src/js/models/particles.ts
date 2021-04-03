@@ -1,5 +1,97 @@
+import gsap from 'gsap'
 import { Velocity, Color, Point, Circle } from './base'
-export { Particle, BackgroundParticle }
+export { Particles, BackgroundParticles }
+
+class Particles {
+    private particles: Particle[]
+    constructor() {
+        this.particles = []
+    }
+
+    create(at: Point, color: Color, amount: number, angle: number) {
+        // angle determines the direction particles will shoot off in
+        const xBias = Math.cos(angle)
+        const yBias = Math.sin(angle)
+        for (let i = 0; i < amount; i++) {
+            this.particles.push(
+                new Particle(
+                    new Point(at.x, at.y),
+                    Math.random() * 2,
+                    color,
+                    new Velocity(
+                        (Math.random() - 0.5) + xBias,
+                        (Math.random() - 0.5) + yBias
+                    )
+                )
+            )
+        }
+    }
+
+    update(c: CanvasRenderingContext2D) {
+        this.particles = this.particles.filter(p => p.alpha > 0)
+        this.particles.forEach(p => p.update(c))
+    }
+}
+
+class BackgroundParticles {
+    private particles: BackgroundParticle[]
+    private lit: number
+    constructor(topLeft: Point, bottomRight: Point, spacing: number) {
+        this.particles = []
+        this.lit = 0
+        for (var i = topLeft.x; i < bottomRight.x; i += spacing) {
+            for (let j = topLeft.y; j < bottomRight.y; j += spacing) {
+                this.particles.push(new BackgroundParticle(new Point(i, j), 3, new Color(0, 0, 100)))
+            }
+        }
+    }
+
+    get count(): number {
+        return this.particles.length
+    }
+
+    get litCount(): number {
+        return this.lit
+    }
+
+    reset(color: Color) {
+        this.particles.forEach(p => {
+            p.color = color
+            gsap.to(p, {
+                alpha: 0.15,
+                duration: 0.03,
+                onComplete: () => {
+                    gsap.to(p, {
+                        alpha: p.initialAlpha,
+                        touched: false,
+                        duration: 0.03
+                    })
+                }
+            })
+        })
+        this.lit = 0
+    }
+
+    update(c: CanvasRenderingContext2D, playerPosition: Point) {
+        this.particles.forEach(bp => {
+            const dist = Math.hypot(playerPosition.x - bp.center.x, playerPosition.y - bp.center.y)
+            const hideRadius = 125
+            if (dist < hideRadius) {
+                // hide close particles, illuminate radius
+                bp.alpha = dist < 70 ? 0 : 0.35
+                if (!bp.touched) {
+                    this.lit += 1
+                    bp.touch()
+                }
+            }
+            bp.update(c)
+        })
+    }
+
+    touchAll() {
+        this.particles.forEach(bp => bp.touch())
+    }
+}
 
 class Particle {
     public alpha: number
@@ -34,6 +126,7 @@ class Particle {
     }
 }
 
+
 class BackgroundParticle extends Circle {
     public alpha: number
     public initialAlpha: number
@@ -64,7 +157,7 @@ class BackgroundParticle extends Circle {
         if (this.touched) {
             if (this.alpha > this.initialAlpha) {
                 this.alpha -= Math.random() * 0.05
-            } else if (this.alpha < this.initialAlpha) {
+            } else if (this.alpha <= this.initialAlpha) {
                 this.alpha += Math.random() * 0.10
             }
         }

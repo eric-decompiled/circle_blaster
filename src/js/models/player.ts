@@ -1,5 +1,5 @@
 import { Circle, Point, Velocity, Color } from './base'
-import { Mouse } from './input'
+import { Mouse, Keys } from './input'
 const shootAudio = new Audio('./audio/altShoot.mp3')
 const unleashedAudio = new Audio('./audio/unlock.mp3')
 export { Player, Projectile }
@@ -7,7 +7,6 @@ const playerRadius = 10
 
 class Player extends Circle {
     public powerUp: string
-    public velocity: Velocity
     private unleashed: boolean
     private speed: number
     private power: number
@@ -33,8 +32,8 @@ class Player extends Circle {
         this.unleashed = false
     }
 
-    isUnleashed() {
-        return !!this.unleashed
+    get isUnleashed(): boolean {
+        return this.unleashed
     }
 
     draw(c: CanvasRenderingContext2D) {
@@ -114,7 +113,7 @@ class Projectile extends Circle {
     collide(h: number = undefined) {
         if (this.color.l > 80) this.color.l = 60
         if (h) this.color.h = h
-        if(this.color.s === 0 && h)  this.color.s = 80
+        if (this.color.s === 0 && h) this.color.s = 80
         this.color.l -= 10
     }
 }

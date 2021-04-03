@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "webpack --config webpack.config.js",
     "start": "webpack --config webpack.config.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha",
     "build": "webpack --config webpack.prod.js"
   },
   "keywords": [],
@@ -24,7 +24,9 @@
     "babel-loader": "^8.1.0",
     "browser-sync": "^2.26.7",
     "browser-sync-webpack-plugin": "^2.2.2",
+    "chai": "^4.3.4",
     "html-webpack-plugin": "^4.0.3",
+    "mocha": "^8.3.2",
     "prettier": "^2.0.2",
     "ts-loader": "^8.0.18",
     "typescript": "^4.2.3",
