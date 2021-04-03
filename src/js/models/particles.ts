@@ -1,6 +1,7 @@
 import gsap from 'gsap'
 import { Velocity, Color, Point, Circle } from './base'
 export { Particles, BackgroundParticles }
+const spacing = 30
 
 class Particles {
     private particles: Particle[]
@@ -36,7 +37,7 @@ class Particles {
 class BackgroundParticles {
     private particles: BackgroundParticle[]
     private lit: number
-    constructor(topLeft: Point, bottomRight: Point, spacing: number) {
+    constructor(topLeft: Point, bottomRight: Point) {
         this.particles = []
         this.lit = 0
         for (var i = topLeft.x; i < bottomRight.x; i += spacing) {

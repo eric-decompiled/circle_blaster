@@ -1,6 +1,5 @@
 import gsap from 'gsap'
 import { Circle, Point, Velocity, randomColor, Color } from './base'
-import { Player } from './player'
 export {
     Enemy,
     HomingEnemy,
@@ -10,6 +9,8 @@ export {
 
 const minEnemySize = 12
 const enemyHitAudio = new Audio('./audio/hit.mp3')
+const enemyDestroyedAudio = new Audio('./audio/destroy.mp3')
+enemyDestroyedAudio.volume = 0.75
 
 class Enemy extends Circle {
     public id: number
@@ -40,7 +41,9 @@ class Enemy extends Circle {
         hitSound.volume = 0.33
         hitSound.play()
         this.radius -= amount
-        return this.radius > minEnemySize
+        const destroyed = this.radius < minEnemySize
+        if (destroyed) enemyDestroyedAudio.play()
+        return destroyed
     }
 
     collide() { }
@@ -91,10 +94,10 @@ class Boss extends Enemy {
     public isBoss: true
     private frame: number
     private drawRadius: number
-    constructor(spawnPoint: Point, private player: Player) {
+    constructor(spawnPoint: Point, protected target: Point) {
         super(
             spawnPoint,
-            player.center,
+            target,
             8
         )
         this.radius = Math.min(150, this.radius)
@@ -119,7 +122,7 @@ class Boss extends Enemy {
         let h = this.frame % 360
         let s = (this.frame % 20) + 40
         this.color = new Color(h, s, 50)
-        const angle = this.center.angleTo(this.player.center)
+        const angle = this.center.angleTo(this.target)
         this.velocity = new Velocity(
             Math.cos(angle) * this.baseSpeed,
             Math.sin(angle) * this.baseSpeed
@@ -133,18 +136,18 @@ class Boss extends Enemy {
         const hitSound = enemyHitAudio.cloneNode() as HTMLAudioElement
         hitSound.volume = 0.50
         hitSound.play()
-        this.radius -= 25
+        this.radius -= 1
         if (this.radius > minEnemySize) {
             gsap.to(this, {
                 drawRadius: this.radius
             })
-            return true
+            return false
         } else {
             gsap.to(this, {
                 alpha: 0.0,
                 duration: 0.20
             })
-            return false
+            return true
         }
     }
 

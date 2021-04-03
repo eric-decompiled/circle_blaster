@@ -64,17 +64,4 @@ class BackgroundMusic {
                 break
         }
     }
-
-    // fadeout boss music after a win
-    // gsap.to(bossMusic, {
-    //     volume: 0.0,
-    //     duration: 4,
-    //     onComplete: () => {
-    //         bossMusic.pause()
-    //         bossMusic.currentTime = 0
-    //         bossMusic.volume = 1.0
-    //     }
-    // })
-    // backgroundMusic.volume = 0.5
-    // backgroundMusic.play()
 }
