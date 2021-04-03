@@ -24,8 +24,8 @@ const victoryEl = document.querySelector('#victoryEl') as HTMLElement
 const albatrossSongURL = './audio/albatross.mp3'
 const movingMiamiSongURL = './audio/moving_to_miami.mp3'
 const inCloudsSongURL = './audio/in_clouds.mp3'
-let currentSong = albatrossSongURL
-const backgroundMusic = new Audio(currentSong)
+let startingSong = albatrossSongURL
+const backgroundMusic = new Audio(startingSong)
 backgroundMusic.volume = 0.66
 backgroundMusic.currentTime = 0
 const bossMusic = new Audio('./audio/altBoss.mp3')
@@ -152,10 +152,6 @@ function init() {
         new Point(bottomRight.x, 2 * canvas.height / 3),
         new Point(bottomRight.x, canvas.height),
     ]
-    spawnEnemy(1)
-    spawnEnemy(1)
-    spawnEnemy(1)
-    spawnEnemy(1)
 }
 
 function animate() {
@@ -656,22 +652,21 @@ function randomSpawnPoint(): Point {
 }
 
 function nextSong() {
-    switch (currentSong) {
+    switch (backgroundMusic.src) {
         case albatrossSongURL: default:
             backgroundMusic.src = movingMiamiSongURL
             backgroundMusic.volume = 0.4
-            break
-        case inCloudsSongURL:
-            backgroundMusic.src = albatrossSongURL
-            backgroundMusic.volume = 0.5
             break
         case movingMiamiSongURL:
             backgroundMusic.src = inCloudsSongURL
             backgroundMusic.volume = 0.33
             break
+        case inCloudsSongURL:
+            backgroundMusic.src = albatrossSongURL
+            backgroundMusic.volume = 0.5
+            break
     }
     if (!scene.boss) {
-        backgroundMusic.src = currentSong
         backgroundMusic.pause()
         backgroundMusic.load()
         backgroundMusic.play()
