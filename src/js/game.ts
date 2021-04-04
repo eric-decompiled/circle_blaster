@@ -117,8 +117,8 @@ function updateEnemies() {
 
                 projectile.collide(enemy.color.h)
                 projectile.resolveCollision(enemy)
-                enemy.velocity.x *= 0.65
-                enemy.velocity.y *= 0.65
+                enemy.velocity.x *= 0.6
+                enemy.velocity.y *= 0.6
                 projectile.velocity.x *= 0.9
                 projectile.velocity.y *= 0.9
                 const destroyed = enemy.hit(projectile.power)

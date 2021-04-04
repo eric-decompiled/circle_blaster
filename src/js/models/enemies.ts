@@ -24,7 +24,7 @@ class Enemy extends Circle {
             2 * (radius + level * 10),
             randomColor(),
         )
-        this.friction = 0.999
+        this.friction = 0.997
         this.target = target
         this.points = 200 + level * 50
         this.baseSpeed = 0.85 + (Math.random() * 0.25)
