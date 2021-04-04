@@ -27,7 +27,7 @@ class Enemy extends Circle {
         this.friction = 0.999
         this.target = target
         this.points = 200 + level * 50
-        this.baseSpeed = 0.75 + (Math.random() * 0.25)
+        this.baseSpeed = 0.85 + (Math.random() * 0.25)
         this.inPlay = false
         const angle = this.center.angleTo(target)
         this.velocity = new Velocity(
@@ -84,8 +84,11 @@ class OscilatingEnemy extends Enemy {
     }
 
     collide() {
-        this.drive.x = -this.drive.x
-        this.drive.y = -this.drive.y
+        if (Math.random() < 0.5) {
+            this.drive.x = -this.drive.x
+        } else {
+            this.drive.y = -this.drive.y
+        }
     }
 }
 
