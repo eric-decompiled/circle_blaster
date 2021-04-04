@@ -1,13 +1,18 @@
 import { Point } from "./base";
 
+const MaxDelay = 20
 export class Keys {
+    private releaseTimes: Object
     constructor(
         public up = false,
         public down = false,
         public right = false,
         public left = false,
     ) {
+        this.releaseTimes = {}
         addEventListener('keydown', ({ code }) => {
+            let time = new Date().getTime()
+            if (this.releaseTimes[code] && time < this.releaseTimes[code] + MaxDelay) return
             switch (code) {
                 case 'KeyW': case 'ArrowUp':
                     this.up = true
@@ -25,6 +30,7 @@ export class Keys {
         })
 
         addEventListener('keyup', ({ code }) => {
+            this.releaseTimes[code] = new Date().getTime()
             switch (code) {
                 case 'KeyW': case 'ArrowUp':
                     this.up = false
@@ -39,6 +45,12 @@ export class Keys {
                     this.right = false
                     break
             }
+        })
+        addEventListener('blur', () => {
+            this.up = false
+            this.left = false
+            this.down = false
+            this.right = false
         })
     }
 }
@@ -59,7 +71,7 @@ export class Mouse {
             this.point.y = clientY
         })
 
-        addEventListener('thisup', () => {
+        addEventListener('mouseup', () => {
             this.down = false
         })
 

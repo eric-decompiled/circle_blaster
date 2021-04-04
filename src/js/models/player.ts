@@ -26,8 +26,8 @@ class Player extends Circle {
         this.powerUp = ''
         this.friction = 0.92
         this.speed = 0.50
-        this.shotSpeed = 6
-        this.power = 10
+        this.shotSpeed = 12
+        this.power = 12
         this.maxShots = 10
         this.unleashed = false
     }
@@ -36,11 +36,8 @@ class Player extends Circle {
         return this.unleashed
     }
 
-    draw(c: CanvasRenderingContext2D) {
-        c.beginPath()
-        c.arc(this.center.x, this.center.y, this.radius, 0, Math.PI * 2, false)
-        c.fillStyle = this.color.toString()
-        c.fill()
+    setborder(color: Color) {
+        this.border = color
     }
 
     shoot(mouse: Mouse) {
@@ -56,7 +53,7 @@ class Player extends Circle {
             this.center.x + velocity.x,
             this.center.y + velocity.y
         )
-        return new Projectile(spawnAt, 5, this.color.clone(), velocity, this.power)
+        return new Projectile(spawnAt, 5, this.color.clone(), velocity, this.power, this.border)
     }
 
     update(c: CanvasRenderingContext2D) {
@@ -99,7 +96,8 @@ class Projectile extends Circle {
         radius: number,
         color: Color,
         velocity: Velocity,
-        power: number
+        power: number,
+        border: Color = undefined
     ) {
         super(
             center,
@@ -108,12 +106,13 @@ class Projectile extends Circle {
         )
         this.velocity = velocity
         this.power = power
+        this.border = border
     }
 
     collide(h: number = undefined) {
         if (this.color.l > 80) this.color.l = 60
         if (h) this.color.h = h
-        if (this.color.s === 0 && h) this.color.s = 80
+        if (this.color.s === 0 && h) this.color.s = 25
         this.color.l -= 10
     }
 }

@@ -14,18 +14,14 @@ import { initSpawnPoints, spawnBoss, spawnEnemies, spawnPowerUp } from '../spawn
 
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
-c.lineWidth = 5
 canvas.width = innerWidth
 canvas.height = innerHeight - inforBarEl.clientHeight
 // Sound FX
-const startGameAudio = new Audio('./audio/start.mp3')
 const obtainPowerupAudio = new Audio('./audio/powerup.mp3')
 const maxShotsAudio = new Audio('./audio/cancel.mp3')
 
 const playerColor = new Color(0, 0, 100)
 let scene: Scene
-let topLeft: Point
-let bottomRight: Point
 let animationId: number
 let player: Player
 let powerUps: PowerUp[]
@@ -33,12 +29,13 @@ let particles: Particles
 let enemies: any[]
 let projectiles: Projectile[]
 let backgroundParticles: BackgroundParticles
-let mouse = new Mouse()
-let keys = new Keys()
+let mouse: Mouse
+let keys: Keys
 let frame = 0
 let powerupTimeout = setTimeout(() => { }, 0) // let type inference do its thing
 let center: Point
-const padding = 0
+let topLeft: Point
+let bottomRight: Point
 
 function init() {
     mouse = new Mouse()
@@ -50,18 +47,9 @@ function init() {
     }
     canvas.width = innerWidth
     canvas.height = innerHeight - inforBarEl.clientHeight
-    topLeft = new Point(
-        padding,
-        padding
-    )
-    bottomRight = new Point(
-        canvas.width - padding,
-        canvas.height - padding
-    )
-    center = new Point(
-        canvas.width / 2,
-        canvas.height / 2
-    )
+    topLeft = new Point(0, 0)
+    bottomRight = new Point(canvas.width, canvas.height)
+    center = new Point(canvas.width / 2, canvas.height / 2)
     player = new Player(center, playerColor, keys)
     projectiles = []
     particles = new Particles()
@@ -72,11 +60,17 @@ function init() {
 
 }
 
+let perf = []
+const fraemEl = document.getElementById('framesEl')
 function animate() {
     animationId = requestAnimationFrame(animate)
+    let t = performance.now()
+    perf.push(t)
+    while (t - perf[0] >= 1000) perf.shift()
+    fraemEl.innerText = perf.length.toString()
     c.fillStyle = 'rgba(0, 0, 0, 0.5)' // create motion blur effect
     c.fillRect(0, 0, canvas.width, canvas.height)
-    if (frame % (750) === 0) {
+    if (frame % 750 === 0) {
         scene.setLevel()
         spawnEnemies(enemies, scene.level, player.center, center)
         if (Math.random() < 0.20) spawnPowerUp(powerUps, center)
@@ -108,6 +102,7 @@ function updatePlayer() {
 
 function updateEnemies() {
     enemies.forEach((enemy, index) => {
+        if (!enemy) return // protect against undefined bug
         const dist = player.distanceBetween(enemy)
         if (dist < 1) scene.endGame(animationId)
         enemy.update(c)
@@ -122,14 +117,17 @@ function updateEnemies() {
 
                 projectile.collide(enemy.color.h)
                 projectile.resolveCollision(enemy)
-                enemy.velocity.x *= 0.85
-                enemy.velocity.y *= 0.85
+                enemy.velocity.x *= 0.65
+                enemy.velocity.y *= 0.65
+                projectile.velocity.x *= 0.9
+                projectile.velocity.y *= 0.9
                 const destroyed = enemy.hit(projectile.power)
                 if (destroyed) {
                     if (enemy.isBoss) { scene.winGame(animationId) }
 
                     if (enemy.color !== scene.color) {
                         backgroundParticles.reset(enemy.color)
+                        player.leash()
                         scene.color = enemy.color
                     }
                     scene.addScore(enemy.center, enemy.points)
@@ -139,7 +137,7 @@ function updateEnemies() {
                     particles.create(projectile.center, enemy.color, splashAmount, splashAngle)
 
                     // remove enemy after some time for it to fade 
-                    setTimeout(() => enemies = enemies.filter(e => e.id !== enemy.id), 100)
+                    setTimeout(() => enemies = enemies.filter(e => e && e.id !== enemy.id), 0)
                 } else {
                     scene.addScore(projectile.center, 100)
                     projectile.power += 6
@@ -156,6 +154,7 @@ function updateEnemies() {
         // check for collisions with other enemies. For loop to not double collide.
         for (let i = index + 1; i < enemies.length; i++) {
             const e = enemies[i]
+            if (!e) continue
             if (enemy.distanceBetween(e) < 1) {
                 const angle = -enemy.center.angleTo(e.center)
                 const collisionPoint = new Point(
@@ -188,7 +187,7 @@ function updateProjectiles() {
         resolveWallCollisions(projectile)
 
         // remove projectiles that have bounced to many times
-        if (projectile.collisions > 5) setTimeout(() => {
+        if (projectile.collisions > 4) setTimeout(() => {
             particles.create(projectile.center, projectile.color, 24, Math.random() * Math.PI * 2)
             projectiles = projectiles.filter(p => p.id !== projectile.id)
         }, 0)
@@ -199,13 +198,14 @@ function updateProjectiles() {
 function updatePowerups() {
     powerUps.forEach((powerUp, index) => {
         if (powerUp.distanceBetween(player) < 1) {
-            let obtainSound = obtainPowerupAudio.cloneNode() as HTMLAudioElement
-            obtainSound.play()
+            obtainPowerupAudio.play()
             clearTimeout(powerupTimeout)
             player.powerUp = 'Automatic'
+            player.setborder(new Color(46, 65, 52))
             powerUps.splice(index, 1)
             powerupTimeout = setTimeout(() => {
                 player.powerUp = ''
+                player.setborder(undefined)
                 player.color = playerColor
             }, 5000)
         } else {
@@ -258,7 +258,6 @@ startGameBtn.addEventListener('click', (event) => {
     event.stopPropagation()
     scene.active = true
     gameStarted()
-    startGameAudio.play()
     animate()
 })
 

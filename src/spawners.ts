@@ -14,12 +14,11 @@ const spawnEnemies = (enemies: Enemy[], level: number, target: Point, center: Po
     spawnEnemy(enemies, 1, target, center)
     if (level > 1) spawnEnemy(enemies, 1, target, center)
     if (level > 2) spawnEnemy(enemies, 2, target, center)
-    if (level > 3) spawnEnemy(enemies, 3, target, center)
 }
 
 const spawnEnemy = (enemies: Enemy[], level: number, target: Point, center: Point) => {
     let e: Enemy
-    if (Math.random() < 0.3) {
+    if (Math.random() < 0.35) {
         e = new HomingEnemy(randomSpawnPoint(), target, level)
     } else if (Math.random() < 0.15) {
         e = new OscilatingEnemy(randomSpawnPoint(), target, level)
@@ -49,12 +48,13 @@ const spawnBoss = (enemies: Enemy[], scene: Scene, target: Point) => {
     return new Boss(randomSpawnPoint(), target)
 }
 
-function initSpawnPoints(height: number, width: number) {
+function initSpawnPoints(width: number, height: number) {
     spawnPoints = [
         new Point(0, 0),
         new Point(width / 4, 0),
         new Point(width / 2, 0),
         new Point(3 * width / 4, 0),
+        new Point(width, 0),
         new Point(0, height / 3),
         new Point(0, 2 * height / 3),
         new Point(0, height),

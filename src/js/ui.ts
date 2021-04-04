@@ -17,7 +17,7 @@ const modalEl = document.querySelector('#modalEl') as HTMLElement
 const bigScoreEl = document.querySelector('#bigScoreEl')
 const runtimeEl = document.querySelector('#timeEl')
 const victoryEl = document.querySelector('#victoryEl') as HTMLElement
-
+const startGameAudio = new Audio('./audio/start.mp3')
 
 const updateScore = (position: Point, points: number, currentScore: number) => {
     scoreEl.innerHTML = currentScore.toString()
@@ -65,6 +65,7 @@ const displayStartModal = (score: number) => {
 }
 
 const gameStarted = () => {
+    startGameAudio.play()
     scoreEl.innerHTML = '0'
     levelEl.innerHTML = '1'
     gsap.to(modalEl, {

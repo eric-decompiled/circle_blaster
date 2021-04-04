@@ -15,9 +15,9 @@ class Scene {
         public level = 1,
         public startTime = Date.now(),
     ) {
-        if (this.bgMusic.isBoss) {
+        if (this.bgMusic.isBossMusic) {
             bgMusic.fade(2000)
-            setTimeout(() => bgMusic.setSong(defaultSong), 2000)
+            setTimeout(() => bgMusic.setSong(defaultSong), 2100)
         }
     }
 
@@ -25,7 +25,7 @@ class Scene {
         if (this.score > 2500) this.level = 2
         if (this.score > 5000) this.level = 3
         if (this.score > 10000) this.level = 4
-        if (this.score > 20000) this.level = 5
+        if (this.score > 15000) this.level = 5
         if (this.score > 250000) this.level = 6
         if (this.score > 1000000) this.level = 7
         updateLevel(this.level)

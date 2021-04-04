@@ -20,7 +20,8 @@ const volumes = {
 export { BackgroundMusic }
 
 class BackgroundMusic {
-    audio: HTMLAudioElement
+    private audio: HTMLAudioElement
+    private isBoss: boolean
     constructor(startingSong = defaultSong) {
         this.audio = new Audio()
         this.setSong(startingSong)
@@ -31,17 +32,19 @@ class BackgroundMusic {
         this.audio.src = songURL
         this.audio.volume = volumes[songURL]
         if (songURL === bossMusicURL) {
+            this.isBoss = true
             this.audio.loop = true
         } else {
             this.audio.loop = false
+            this.isBoss = false
         }
         this.audio.pause()
         this.audio.load()
         this.audio.play()
     }
 
-    get isBoss(): boolean {
-        return this.audio.src === bossMusicURL
+    get isBossMusic(): boolean {
+        return this.isBoss
     }
 
     fade(over: number) {

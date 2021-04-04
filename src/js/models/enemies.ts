@@ -1,4 +1,3 @@
-import gsap from 'gsap'
 import { Circle, Point, Velocity, randomColor, Color } from './base'
 export {
     Enemy,
@@ -7,10 +6,10 @@ export {
     Boss
 }
 
-const minEnemySize = 12
+const minEnemySize = 16
 const enemyHitAudio = new Audio('./audio/hit.mp3')
 const enemyDestroyedAudio = new Audio('./audio/destroy.mp3')
-enemyDestroyedAudio.volume = 0.75
+enemyDestroyedAudio.volume = 0.33
 
 class Enemy extends Circle {
     public id: number
@@ -25,6 +24,7 @@ class Enemy extends Circle {
             2 * (radius + level * 10),
             randomColor(),
         )
+        this.friction = 0.999
         this.target = target
         this.points = 200 + level * 50
         this.baseSpeed = 0.75 + (Math.random() * 0.25)
@@ -93,7 +93,6 @@ class Boss extends Enemy {
     public points: number
     public isBoss: true
     private frame: number
-    private drawRadius: number
     constructor(spawnPoint: Point, protected target: Point) {
         super(
             spawnPoint,
@@ -101,19 +100,10 @@ class Boss extends Enemy {
             8
         )
         this.radius = Math.min(150, this.radius)
-        this.drawRadius = this.radius
-        this.baseSpeed = 1.2
+        this.baseSpeed = 2
         this.points = 10000
         this.frame = 0
         this.isBoss = true
-    }
-
-    draw(c: CanvasRenderingContext2D) {
-        c.beginPath()
-        c.arc(this.center.x, this.center.y, this.drawRadius, 0, Math.PI * 2, false)
-        c.fillStyle = this.color.toString()
-        c.fill()
-        c.stroke()
     }
 
     update(c: CanvasRenderingContext2D) {
@@ -132,23 +122,13 @@ class Boss extends Enemy {
     }
 
     hit(amount: number) {
-        // boss only take one damage
         const hitSound = enemyHitAudio.cloneNode() as HTMLAudioElement
-        hitSound.volume = 0.50
+        hitSound.volume = 0.4
         hitSound.play()
         this.radius -= 1
-        if (this.radius > minEnemySize) {
-            gsap.to(this, {
-                drawRadius: this.radius
-            })
-            return false
-        } else {
-            gsap.to(this, {
-                alpha: 0.0,
-                duration: 0.20
-            })
-            return true
-        }
+        const destroyed = this.radius < minEnemySize
+        if (destroyed) enemyDestroyedAudio.play()
+        return destroyed
     }
 
     collide() { }

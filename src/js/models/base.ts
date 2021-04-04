@@ -42,7 +42,7 @@ export class Color {
 }
 
 const colors = [
-    new Color(0, 70, 30),
+    new Color(1, 70, 30),
     new Color(90, 70, 30),
     new Color(220, 70, 30),
     new Color(36, 70, 30),
@@ -72,6 +72,7 @@ export abstract class Circle {
         c.fillStyle = this.color.toString()
         c.fill()
         if (this.border) {
+            c.lineWidth = 3
             c.strokeStyle = this.border.toString()
             c.stroke()
         }
