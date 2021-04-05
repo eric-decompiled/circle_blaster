@@ -2,7 +2,7 @@ import { Player, Projectile } from './models/player'
 import { PowerUp } from './models/powerups'
 import { BackgroundParticles, Particles } from './models/particles'
 import { Circle, Color, Point } from './models/base'
-import { Keys, Mouse } from './models/input'
+import { Keys, Mouse } from './input'
 import {
     gameStarted,
     inforBarEl,
@@ -134,7 +134,8 @@ function updateEnemies() {
 
                     // extra splash for kill
                     const splashAmount = Math.random() * 12 + 6
-                    particles.create(projectile.center, enemy.color, splashAmount, splashAngle)
+                    const speed = 3
+                    particles.create(projectile.center, enemy.color, splashAmount, splashAngle, speed)
 
                     // remove enemy after some time for it to fade 
                     setTimeout(() => enemies = enemies.filter(e => e && e.id !== enemy.id), 0)

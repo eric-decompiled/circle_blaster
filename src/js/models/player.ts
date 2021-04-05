@@ -1,5 +1,5 @@
 import { Circle, Point, Velocity, Color } from './base'
-import { Mouse, Keys } from './input'
+import { Mouse, Keys } from '../input'
 const shootAudio = new Audio('./audio/altShoot.mp3')
 const unleashedAudio = new Audio('./audio/unlock.mp3')
 export { Player, Projectile }

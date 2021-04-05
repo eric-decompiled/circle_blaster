@@ -1,4 +1,4 @@
-import { Point } from "./base";
+import { Point } from "./models/base";
 
 const MaxDelay = 20
 export class Keys {
@@ -88,6 +88,11 @@ export class Mouse {
 
         addEventListener('touchend', () => {
             this.down = false
+        })
+        addEventListener('blur', () => {
+            this.down = false
+            point.x = undefined
+            point.y = undefined
         })
 
     }

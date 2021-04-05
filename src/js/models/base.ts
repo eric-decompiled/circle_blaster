@@ -63,7 +63,7 @@ export abstract class Circle {
     ) {
         this.id = id++
         this.velocity = new Velocity(0, 0)
-        this.mass = this.radius // probably should be reduced with radius
+        this.mass = Math.PI * this.radius * this.radius
     }
 
     protected draw(c: CanvasRenderingContext2D): void {

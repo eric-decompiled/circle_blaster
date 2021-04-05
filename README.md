@@ -13,3 +13,6 @@ To run this on your own machine you will need [node](https://nodejs.org/en/) ins
 1. Clone this repo and cd into the directory
 1. npm install
 1. npm run dev
+
+### Music + Sound Effects
+All music and sound effects are from [Epidemic Sound](https://www.epidemicsound.com)

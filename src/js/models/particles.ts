@@ -9,10 +9,10 @@ class Particles {
         this.particles = []
     }
 
-    create(at: Point, color: Color, amount: number, angle: number) {
+    create(at: Point, color: Color, amount: number, angle: number, speed = 1) {
         // angle determines the direction particles will shoot off in
-        const xBias = Math.cos(angle)
-        const yBias = Math.sin(angle)
+        const xBias = Math.cos(angle) * 0.5
+        const yBias = Math.sin(angle) * 0.5
         for (let i = 0; i < amount; i++) {
             this.particles.push(
                 new Particle(
@@ -20,8 +20,8 @@ class Particles {
                     Math.random() * 2,
                     color,
                     new Velocity(
-                        (Math.random() - 0.5) + xBias,
-                        (Math.random() - 0.5) + yBias
+                        ((Math.random() - 0.5) + xBias) * speed,
+                        ((Math.random() - 0.5) + yBias) * speed
                     )
                 )
             )
