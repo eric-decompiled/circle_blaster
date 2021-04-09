@@ -70,6 +70,7 @@ function animate() {
     animationId = requestAnimationFrame(animate)
     c.fillStyle = 'rgba(0, 0, 0, 0.5)' // create motion blur effect
     c.fillRect(0, 0, canvas.width, canvas.height)
+    if (frame % 25 && enemies.length === 0) spawnEnemies(enemies, 1, player.center, center)
     if (frame % 750 === 0) {
         scene.setLevel()
         spawnEnemies(enemies, scene.level, player.center, center)
