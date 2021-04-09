@@ -45,29 +45,29 @@ function init() {
     } else {
         scene = new Scene()
     }
-    canvas.width = innerWidth
-    canvas.height = innerHeight - inforBarEl.clientHeight
-    topLeft = new Point(0, 0)
-    bottomRight = new Point(canvas.width, canvas.height)
-    center = new Point(canvas.width / 2, canvas.height / 2)
     player = new Player(center, playerColor, keys)
     projectiles = []
     particles = new Particles()
     enemies = []
     powerUps = []
+    sizeWindow()
     initSpawnPoints(canvas.width, canvas.height)
-    backgroundParticles = new BackgroundParticles(topLeft, bottomRight)
-
 }
 
-let perf = []
-const fraemEl = document.getElementById('framesEl')
+sizeWindow()
+
+function sizeWindow() {
+    canvas.width = innerWidth
+    canvas.height = innerHeight - inforBarEl.clientHeight
+    topLeft = new Point(0, 0)
+    bottomRight = new Point(canvas.width, canvas.height)
+    center = new Point(canvas.width / 2, canvas.height / 2)
+    backgroundParticles = new BackgroundParticles(topLeft, bottomRight)
+    backgroundParticles.update(c, center)
+}
+
 function animate() {
     animationId = requestAnimationFrame(animate)
-    let t = performance.now()
-    perf.push(t)
-    while (t - perf[0] >= 1000) perf.shift()
-    fraemEl.innerText = perf.length.toString()
     c.fillStyle = 'rgba(0, 0, 0, 0.5)' // create motion blur effect
     c.fillRect(0, 0, canvas.width, canvas.height)
     if (frame % 750 === 0) {
@@ -123,7 +123,6 @@ function updateEnemies() {
                 projectile.velocity.y *= 0.9
                 const destroyed = enemy.hit(projectile.power)
                 if (destroyed) {
-                    if (enemy.isBoss) { scene.winGame(animationId) }
 
                     if (enemy.color !== scene.color) {
                         backgroundParticles.reset(enemy.color)
@@ -136,6 +135,9 @@ function updateEnemies() {
                     const splashAmount = Math.random() * 12 + 6
                     const speed = 3
                     particles.create(projectile.center, enemy.color, splashAmount, splashAngle, speed)
+
+                    // win condition
+                    if (enemy.isBoss) { scene.winGame(animationId) }
 
                     // remove enemy after some time for it to fade 
                     setTimeout(() => enemies = enemies.filter(e => e && e.id !== enemy.id), 0)

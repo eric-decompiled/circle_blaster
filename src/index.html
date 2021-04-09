@@ -7,22 +7,28 @@
 <head>
   <meta charset="UTF-8" />
   <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;1,700&display=swap" rel="stylesheet">
   <title>Circle Blaster</title>
   <style>
     body {
       margin: 0;
       background: black;
       overflow: hidden;
+      font-family: 'Exo 2', sans-serif;
+      letter-spacing: 2.5px;
+    }
+
+    #infoBar {
+      letter-spacing: 2.5px;
     }
   </style>
 </head>
 
 <body>
-  <div id="infoBar" class="flex justify-between">
-    <div class="p-2 text-white text-sm ml-2 select-none"><span>Score: </span><span id="scoreEl">0</span></div>
-    <div class="p-2 text-white text-xs ml-2 select-none"><span>FPS: </span><span id="framesEl">0</span></div>
-    <div class="p-2 text-white text-sm ml-2 select-none mr-1"><span>Level: </span><span id="levelEl">1</span>
-    </div>
+  <div id="infoBar" class="flex justify-around">
+    <div class="p-2 text-white text ml-2 select-none mr-1"><span>Level: </span><span id="levelEl">1</span></div>
+    <div class="p-2 text-white text ml-2 select-none"><span>Score: </span><span id="scoreEl">0</span></div>
   </div>
   <canvas></canvas>
 
@@ -34,9 +40,10 @@
         <p class="text-sm mb-4">Run Time</p>
       </div>
       <h1 class="text-4xl font-bold leading-none" id="bigScoreEl">0</h1>
-      <p class="text-sm mb-4">Points</p>
+      <p class="text-sm mb-4">Score</p>
       <div>
-        <button id="startGameBtn" class="bg-blue-700 hover:shadow text-white w-full py-3 rounded-full text-sm">Start
+        <button id="startGameBtn"
+          class="bg-blue-700 text-2xl hover:shadow text-white py-3 rounded-full text-sm w-full">Start
           Game</button>
       </div>
       <div class="center font-light text-xs pt-1 mt-2">
