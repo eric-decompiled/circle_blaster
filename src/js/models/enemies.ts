@@ -46,7 +46,7 @@ class Enemy extends Circle {
         return destroyed
     }
 
-    collide() { }
+    collide() { } // only used for oscilating enemy
 }
 
 class HomingEnemy extends Enemy {
@@ -57,8 +57,8 @@ class HomingEnemy extends Enemy {
     update(c: CanvasRenderingContext2D) {
         this.draw(c)
         const angle = this.center.angleTo(this.target)
-        this.velocity.x += Math.cos(angle) * 0.11 * this.baseSpeed
-        this.velocity.y += Math.sin(angle) * 0.11 * this.baseSpeed
+        this.velocity.x += Math.abs(Math.cos(angle)) * 0.11 * this.baseSpeed
+        this.velocity.y += Math.abs(Math.sin(angle)) * 0.11 * this.baseSpeed
         this.velocity.x *= 0.96
         this.velocity.y *= 0.96
         this.center.x += this.velocity.x
@@ -70,17 +70,18 @@ class OscilatingEnemy extends Enemy {
     private drive: Velocity
     constructor(spawn: Point, target: Point, level: number) {
         super(spawn, target, level)
-        this.drive = this.velocity
+        this.drive = new Velocity(this.velocity.x, this.velocity.y)
         this.border = new Color(258, 40, 60)
+        this.baseSpeed = 1.50 + 0.10 * level
     }
     update(c: CanvasRenderingContext2D) {
         this.draw(c)
-        this.center.x += this.velocity.x
-        this.center.y += this.velocity.y
-        this.velocity.x += this.drive.x * 0.05
-        this.velocity.y += this.drive.y * 0.05
-        this.velocity.x *= 0.95
-        this.velocity.y *= 0.95
+        this.center.x += this.velocity.x * this.baseSpeed
+        this.center.y += this.velocity.y * this.baseSpeed
+        this.velocity.x += this.drive.x * 0.10
+        this.velocity.y += this.drive.y * 0.10
+        this.velocity.x *= 0.90
+        this.velocity.y *= 0.92
     }
 
     collide() {
@@ -89,6 +90,8 @@ class OscilatingEnemy extends Enemy {
         } else {
             this.drive.y = -this.drive.y
         }
+        this.velocity.x = 0
+        this.velocity.y = 0
     }
 }
 
@@ -133,6 +136,4 @@ class Boss extends Enemy {
         if (destroyed) enemyDestroyedAudio.play()
         return destroyed
     }
-
-    collide() { }
 }

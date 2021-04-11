@@ -6,22 +6,9 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;1,700&display=swap" rel="stylesheet">
+  <link href="./style.css" rel="stylesheet">
   <title>Circle Blaster</title>
   <style>
-    body {
-      margin: 0;
-      background: black;
-      overflow: hidden;
-      font-family: 'Exo 2', sans-serif;
-      letter-spacing: 2.5px;
-    }
-
-    #infoBar {
-      letter-spacing: 2.5px;
-    }
   </style>
 <link rel="icon" href="favicon.ico"></head>
 
@@ -44,7 +31,12 @@
       <div>
         <button id="startGameBtn"
           class="bg-blue-700 text-2xl hover:shadow text-white py-3 rounded-full text-sm w-full">Start
-          Game</button>
+          Game
+        </button>
+        <button id="continueGameBtn"
+          class="hidden bg-green-700 text-2xl hover:shadow test-white py-3 rounded-full text-sm w-full">
+          Continue
+        </button>
       </div>
       <div class="center font-light text-xs pt-1 mt-2">
         Arrow keys or WASD to move. Click to shoot. Collect <img src="./img/lightning.png"

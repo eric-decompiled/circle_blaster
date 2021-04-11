@@ -27,7 +27,16 @@ export class Velocity {
         public y: number
     ) { }
 
-    speed(): number { return Math.hypot(this.x, this.y) }
+    get speed(): number { return Math.hypot(this.x, this.y) }
+
+    public throttle(limit: number) {
+        if (this.speed > limit) {
+            const direction = Math.atan2(this.y, this.x)
+            const adjustment = limit / this.speed
+            this.x = Math.cos(direction) * Math.abs(this.x) * adjustment
+            this.y = Math.sin(direction) * Math.abs(this.y) * adjustment
+        }
+    }
 }
 
 

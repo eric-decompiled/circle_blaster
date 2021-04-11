@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Exo 2';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''),
+    url('./fonts/exo-2-v10-latin-regular.woff2') format('woff2'),
+    /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./fonts/exo-2-v10-latin-regular.woff') format('woff');
+  /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+
+body {
+  margin: 0;
+  background: black;
+  overflow: hidden;
+  font-family: 'Exo 2', sans-serif;
+  letter-spacing: 2.5px;
+}
+
+#infoBar {
+  letter-spacing: 2.5px;
+}
