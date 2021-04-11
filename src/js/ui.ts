@@ -45,8 +45,10 @@ class Scene {
         if (this.score > 5000) this.level = 3
         if (this.score > 10000) this.level = 4
         if (this.score > 15000) this.level = 5
-        if (this.score > 250000) this.level = 6
-        if (this.score > 1000000) this.level = 7
+        if (this.score > 25000) this.level = 6
+        if (this.score > 50000) this.level = 7
+        if (this.score > 100000) this.level = 8
+        if (this.score > 150000) this.level = 9
         updateLevel(this.level)
     }
 

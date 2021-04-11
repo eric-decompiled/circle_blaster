@@ -57,8 +57,8 @@ class HomingEnemy extends Enemy {
     update(c: CanvasRenderingContext2D) {
         this.draw(c)
         const angle = this.center.angleTo(this.target)
-        this.velocity.x += Math.abs(Math.cos(angle)) * 0.11 * this.baseSpeed
-        this.velocity.y += Math.abs(Math.sin(angle)) * 0.11 * this.baseSpeed
+        this.velocity.x += Math.cos(angle) * 0.16 * this.baseSpeed
+        this.velocity.y += Math.sin(angle) * 0.16 * this.baseSpeed
         this.velocity.x *= 0.96
         this.velocity.y *= 0.96
         this.center.x += this.velocity.x
@@ -107,7 +107,7 @@ class Boss extends Enemy {
         )
         this.radius = Math.min(150, this.radius)
         this.baseSpeed = 2
-        this.points = 10000
+        this.points = 1000
         this.frame = 0
         this.isBoss = true
     }

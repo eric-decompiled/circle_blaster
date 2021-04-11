@@ -14,6 +14,12 @@ const spawnEnemies = (enemies: Enemy[], level: number, target: Point, center: Po
     spawnEnemy(enemies, 1, target, center)
     if (level > 1) spawnEnemy(enemies, 1, target, center)
     if (level > 2) spawnEnemy(enemies, 2, target, center)
+    if (level > 3) spawnEnemy(enemies, 2, target, center)
+    if (level > 4) spawnEnemy(enemies, 3, target, center)
+    if (level > 6) spawnEnemy(enemies, 3, target, center)
+    if (level > 7) spawnEnemy(enemies, 3, target, center)
+    if (level > 8) spawnEnemy(enemies, 4, target, center)
+    if (level > 9) spawnEnemy(enemies, 4, target, center)
 }
 
 const spawnEnemy = (enemies: Enemy[], level: number, target: Point, center: Point) => {
@@ -23,9 +29,8 @@ const spawnEnemy = (enemies: Enemy[], level: number, target: Point, center: Poin
     } else if (Math.random() < 0.20) {
         e = new OscilatingEnemy(randomSpawnPoint(), target, level)
     } else {
-        e = new Enemy(randomSpawnPoint(), center, level,)
+        e = new Enemy(randomSpawnPoint(), center, level)
     }
-    e = new Enemy(randomSpawnPoint(), center, level,)
     enemies.push(e)
 }
 
