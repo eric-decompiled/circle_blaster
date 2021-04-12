@@ -4,7 +4,7 @@ const albatrossSongURL = './audio/albatross.mp3'
 const movingMiamiSongURL = './audio/moving_to_miami.mp3'
 const inCloudsSongURL = './audio/in_clouds.mp3'
 export const bossMusicURL = './audio/boss.mp3'
-export const victoryMusicURL = './audio/rising_stars.mp3'
+export const victoryMusicURL = './audio/paint_the_wall.mp3'
 export const defaultSong = albatrossSongURL
 
 // normalize song volume
@@ -15,7 +15,6 @@ const volumes = {
     [bossMusicURL]: 1.0,
     [victoryMusicURL]: 1.0
 }
-
 
 export { BackgroundMusic }
 
@@ -55,16 +54,18 @@ class BackgroundMusic {
     }
 
     nextSong() {
-        switch (this.audio.src) {
+        let path = `./${this.audio.src.split('/').slice(3).join('/')}`
+        switch (path) {
             case albatrossSongURL: default:
                 this.setSong(movingMiamiSongURL)
                 break
             case movingMiamiSongURL:
                 this.setSong(inCloudsSongURL)
                 break
-            case inCloudsSongURL:
+            case inCloudsSongURL: case victoryMusicURL:
                 this.setSong(albatrossSongURL)
                 break
         }
+        console.debug(path, ' now playing: ', this.audio.src)
     }
 }

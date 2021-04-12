@@ -15,6 +15,8 @@ class Enemy extends Circle {
     public id: number
     public points: number
     public inPlay: boolean
+    // give enemy so long to become inPlay
+    public ttl: number
     protected baseSpeed: number
     protected target: Point
     constructor(spawnPoint: Point, target: Point, level: number) {
@@ -24,6 +26,7 @@ class Enemy extends Circle {
             2 * (radius + level * 10),
             randomColor(),
         )
+        this.ttl = 75
         this.friction = 0.997
         this.target = target
         this.points = 200 + level * 50

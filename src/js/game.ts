@@ -12,6 +12,7 @@ import {
     gameContinued,
 } from './ui'
 import { initSpawnPoints, spawnBoss, spawnEnemies, spawnPowerUp } from './spawners'
+import { Enemy } from './models/enemies'
 
 
 const canvas = document.querySelector('canvas')
@@ -143,8 +144,7 @@ function updateEnemies() {
                     // win condition
                     if (enemy.isBoss) { scene.winGame(animationId) }
 
-                    // remove enemy after iterating through all
-                    setTimeout(() => enemies = enemies.filter(e => e && e.id !== enemy.id), 0)
+                    removeEnemy(enemy)
                 } else {
                     scene.addScore(projectile.center, 100)
                     projectile.power += 6
@@ -157,6 +157,10 @@ function updateEnemies() {
             }
         } else {
             enemy.inPlay = !(hitXWall(enemy) || hitYWall(enemy))
+            enemy.ttl -= 1
+            if (enemy.ttl < 0) {
+                removeEnemy(enemy)
+            }
         }
         // check for collisions with other enemies. For loop to not double collide.
         for (let i = index + 1; i < enemies.length; i++) {
@@ -176,6 +180,10 @@ function updateEnemies() {
             }
         }
     })
+}
+
+function removeEnemy(enemy: Enemy) {
+    setTimeout(() => enemies = enemies.filter(e => e && e.id !== enemy.id), 0)
 }
 
 function updateBackgroundParticles() {
