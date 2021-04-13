@@ -28,7 +28,7 @@ class Player extends Circle {
         this.speed = 0.50
         this.shotSpeed = 12
         this.power = 12
-        this.maxShots = 10
+        this.maxShots = 8
         this.unleashed = false
     }
 
@@ -72,7 +72,7 @@ class Player extends Circle {
         if (!this.unleashed) {
             this.speed += 0.15
             this.shotSpeed += 2
-            this.maxShots += 10
+            this.maxShots += 8
             unleashedAudio.play()
             this.unleashed = true
         }
@@ -82,7 +82,7 @@ class Player extends Circle {
         if (this.unleashed) {
             this.speed -= 0.15
             this.shotSpeed -= 2
-            this.maxShots -= 10
+            this.maxShots -= 7
             this.unleashed = false
         }
     }
