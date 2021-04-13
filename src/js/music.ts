@@ -25,6 +25,7 @@ class BackgroundMusic {
         this.audio = new Audio()
         this.setSong(startingSong)
         this.audio.addEventListener('ended', this.nextSong.bind(this))
+        this.audio.addEventListener('load', () => { if (this.audio.pause) this.audio.play() })
     }
 
     setSong(songURL: string) {
