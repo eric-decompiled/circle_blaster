@@ -1,4 +1,5 @@
 node_modules
+dist/js
 .ds_store
 dl
 .vscode

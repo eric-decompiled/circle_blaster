@@ -4,10 +4,10 @@
   "description": "",
   "main": "webpack.config.js",
   "scripts": {
-    "dev": "webpack --config webpack.config.js",
+    "dev": "webpack --config webpack.dev.js",
     "start": "webpack --config webpack.config.js",
     "test": "mocha",
-    "build": "NODE_ENV=production npx tailwindcss build ./src/styles.css -o ./dist/style.css -c tailwind.config.js"
+    "build": "NODE_ENV=production npx tailwindcss build ./src/styles.css -o ./dist/style.css -c tailwind.config.js && webpack --config webpack.prod.js"
   },
   "keywords": [],
   "author": "",
