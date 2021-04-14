@@ -3,7 +3,12 @@ import { Point, Color } from "./models/base"
 import { BackgroundMusic, defaultSong, victoryMusicURL } from "./music"
 
 export {
+    canvas,
     Scene,
+    topLeft,
+    bottomRight,
+    center,
+    sizeWindow,
     gameStarted,
     gameContinued,
     infoBarEl,
@@ -24,6 +29,23 @@ const runtimeEl = document.querySelector('#timeEl')
 const victoryEl = document.querySelector('#victoryEl') as HTMLElement
 const startGameAudio = new Audio('./audio/start.mp3')
 
+const canvas = document.querySelector('canvas')
+sizeWindow(canvas)
+canvas.width = innerWidth
+canvas.height = innerHeight - infoBarEl.clientHeight
+
+let topLeft: Point
+let bottomRight: Point
+let center: Point
+
+function sizeWindow(canvas: HTMLCanvasElement) {
+    canvas.width = innerWidth
+    canvas.height = innerHeight - infoBarEl.clientHeight
+    topLeft = new Point(0, 0)
+    bottomRight = new Point(canvas.width, canvas.height)
+    center = new Point(canvas.width / 2, canvas.height / 2)
+}
+
 class Scene {
     constructor(
         public bgMusic = new BackgroundMusic(),
@@ -41,14 +63,15 @@ class Scene {
     }
 
     setLevel() {
-        if (this.score > 2500) this.level = 2
-        if (this.score > 5000) this.level = 3
-        if (this.score > 10000) this.level = 4
-        if (this.score > 15000) this.level = 5
-        if (this.score > 25000) this.level = 6
-        if (this.score > 50000) this.level = 7
-        if (this.score > 100000) this.level = 8
-        if (this.score > 150000) this.level = 9
+        let score = this.score * 10
+        if (score > 2500) this.level = 2
+        if (score > 5000) this.level = 3
+        if (score > 10000) this.level = 4
+        if (score > 15000) this.level = 5
+        if (score > 25000) this.level = 6
+        if (score > 50000) this.level = 7
+        if (score > 100000) this.level = 8
+        if (score > 150000) this.level = 9
         updateLevel(this.level)
     }
 

@@ -109,10 +109,11 @@ class Boss extends Enemy {
             8
         )
         this.radius = Math.min(150, this.radius)
-        this.baseSpeed = 2
+        this.baseSpeed = 2.5
         this.points = 1000
         this.frame = 0
         this.isBoss = true
+        this.ttl = 99999999 // boss should never be removed because of time
     }
 
     update(c: CanvasRenderingContext2D) {

@@ -6,19 +6,19 @@ import { Keys, Mouse } from './input'
 import {
     Scene,
     gameStarted,
-    infoBarEl,
     startGameBtn,
     continueGameBtn,
     gameContinued,
+    canvas,
+    topLeft,
+    bottomRight,
+    center,
+    sizeWindow,
 } from './ui'
 import { initSpawnPoints, spawnBoss, spawnEnemies, spawnPowerUp } from './spawners'
 import { Enemy } from './models/enemies'
 
-
-const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
-canvas.width = innerWidth
-canvas.height = innerHeight - infoBarEl.clientHeight
 // Sound FX
 const obtainPowerupAudio = new Audio('./audio/powerup.mp3')
 const maxShotsAudio = new Audio('./audio/cancel.mp3')
@@ -36,10 +36,9 @@ let mouse: Mouse
 let keys: Keys
 let frame = 0
 let powerupTimeout = setTimeout(() => { }, 0) // let type inference do its thing
-let center: Point
-let topLeft: Point
-let bottomRight: Point
 
+backgroundParticles = new BackgroundParticles(topLeft, bottomRight)
+backgroundParticles.update(c, center)
 function init() {
     mouse = new Mouse()
     keys = new Keys()
@@ -53,20 +52,7 @@ function init() {
     particles = new Particles()
     enemies = []
     powerUps = []
-    sizeWindow()
     initSpawnPoints(canvas.width, canvas.height)
-}
-
-sizeWindow()
-
-function sizeWindow() {
-    canvas.width = innerWidth
-    canvas.height = innerHeight - infoBarEl.clientHeight
-    topLeft = new Point(0, 0)
-    bottomRight = new Point(canvas.width, canvas.height)
-    center = new Point(canvas.width / 2, canvas.height / 2)
-    backgroundParticles = new BackgroundParticles(topLeft, bottomRight)
-    backgroundParticles.update(c, center)
 }
 
 function animate() {
@@ -112,6 +98,7 @@ function updateEnemies() {
     enemies.forEach((enemy, index) => {
         if (!enemy) return // protect against undefined bug
         const dist = player.distanceBetween(enemy)
+        // lose game if touching an enemy
         if (dist < 1) scene.endGame(animationId)
         enemy.update(c)
         // check if enemy hit any projectiles
@@ -280,9 +267,7 @@ continueGameBtn.addEventListener('click', () => {
 
 
 addEventListener('resize', () => {
-    canvas.width = innerWidth
-    canvas.height = innerHeight
-    init()
+    sizeWindow(canvas)
 })
 
 addEventListener('click', () => {

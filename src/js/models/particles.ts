@@ -1,7 +1,6 @@
 import gsap from 'gsap'
 import { Velocity, Color, Point, Circle } from './base'
 export { Particles, BackgroundParticles }
-const spacing = 30
 
 class Particles {
     private particles: Particle[]
@@ -34,9 +33,14 @@ class Particles {
     }
 }
 
+const spacing = 30
+const aura = 125
+const hideAura = 70
 class BackgroundParticles {
     private particles: BackgroundParticle[]
     private lit: number
+    private aura: number
+    private hideAura: number
     constructor(topLeft: Point, bottomRight: Point) {
         this.particles = []
         this.lit = 0
@@ -75,10 +79,9 @@ class BackgroundParticles {
     update(c: CanvasRenderingContext2D, playerPosition: Point) {
         this.particles.forEach(bp => {
             const dist = Math.hypot(playerPosition.x - bp.center.x, playerPosition.y - bp.center.y)
-            const hideRadius = 125
-            if (dist < hideRadius) {
+            if (dist < aura) {
                 // hide close particles, illuminate radius
-                bp.alpha = dist < 70 ? 0 : 0.35
+                bp.alpha = dist < hideAura ? 0 : 0.35
                 if (!bp.touched) {
                     this.lit += 1
                     bp.touch()
