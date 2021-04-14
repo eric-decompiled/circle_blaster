@@ -39,8 +39,6 @@ const hideAura = 70
 class BackgroundParticles {
     private particles: BackgroundParticle[]
     private lit: number
-    private aura: number
-    private hideAura: number
     constructor(topLeft: Point, bottomRight: Point) {
         this.particles = []
         this.lit = 0

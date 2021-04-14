@@ -63,7 +63,7 @@ class Scene {
     }
 
     setLevel() {
-        let score = this.score * 10
+        let score = this.score
         if (score > 2500) this.level = 2
         if (score > 5000) this.level = 3
         if (score > 10000) this.level = 4
