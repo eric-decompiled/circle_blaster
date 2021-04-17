@@ -6,6 +6,9 @@ powerUpImg.src = './img/lightning.png'
 const imgwidth = 14
 const imgHeight = 19
 
+// ideas
+// force field
+// wrap around
 class PowerUp extends Circle {
     public velocity: Velocity
     public inPlay: boolean

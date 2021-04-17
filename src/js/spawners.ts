@@ -54,22 +54,24 @@ const spawnBoss = (enemies: Enemy[], scene: Scene, target: Point) => {
     return new Boss(randomSpawnPoint(), target)
 }
 
-function initSpawnPoints(width: number, height: number) {
+function initSpawnPoints(topLeft: Point, bottomRight: Point) {
+    let width = bottomRight.x - topLeft.x
+    let height = bottomRight.y - topLeft.y
     spawnPoints = [
-        new Point(0, 0),
-        new Point(width / 4, 0),
-        new Point(width / 2, 0),
-        new Point(3 * width / 4, 0),
-        new Point(width, 0),
-        new Point(0, height / 3),
-        new Point(0, 2 * height / 3),
-        new Point(0, height),
-        new Point(width / 4, height),
-        new Point(width / 2, height),
-        new Point(3 * width / 4, height),
-        new Point(width, height / 3),
-        new Point(width, 2 * height / 3),
-        new Point(width, height),
+        new Point(topLeft.x, topLeft.y),
+        new Point(topLeft.x + (width / 4), topLeft.y),
+        new Point(topLeft.x + (width / 2), topLeft.y),
+        new Point(topLeft.x + (3 * width / 4), topLeft.y),
+        new Point(topLeft.x + width, topLeft.y),
+        new Point(topLeft.x, topLeft.y + height / 3),
+        new Point(topLeft.x, 2 * topLeft.y + height / 3),
+        new Point(topLeft.x, topLeft.y + height),
+        new Point(topLeft.x + width / 4, topLeft.y + height),
+        new Point(topLeft.x + width / 2, topLeft.y + height),
+        new Point(topLeft.x + 3 * width / 4, topLeft.y + height),
+        new Point(topLeft.x + width, topLeft.y + height / 3),
+        new Point(topLeft.x + width, 2 * topLeft.y + height / 3),
+        new Point(topLeft.x + width, topLeft.y + height),
     ]
 }
 

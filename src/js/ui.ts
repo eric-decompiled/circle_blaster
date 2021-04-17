@@ -1,11 +1,15 @@
 import gsap from 'gsap'
 import { Point, Color } from "./models/base"
+import { BackgroundParticles } from './models/particles'
 import { BackgroundMusic, defaultSong, victoryMusicURL } from "./music"
 
 export {
     canvas,
+    ctx,
     Scene,
+    backgroundParticles,
     topLeft,
+    offSet,
     bottomRight,
     center,
     sizeWindow,
@@ -13,7 +17,9 @@ export {
     gameContinued,
     infoBarEl,
     startGameBtn,
-    continueGameBtn
+    continueGameBtn,
+    maxWidth,
+    maxHeight
 }
 
 const endGameAudio = new Audio('./audio/altEnd.mp3')
@@ -30,21 +36,33 @@ const victoryEl = document.querySelector('#victoryEl') as HTMLElement
 const startGameAudio = new Audio('./audio/start.mp3')
 
 const canvas = document.querySelector('canvas')
-sizeWindow(canvas)
 canvas.width = innerWidth
 canvas.height = innerHeight - infoBarEl.clientHeight
+let ctx: CanvasRenderingContext2D
 
 let topLeft: Point
 let bottomRight: Point
 let center: Point
+let offSet = new Point(0, 0)
+let backgroundParticles: BackgroundParticles
 
+const maxWidth = 1920
+const maxHeight = 1080
 function sizeWindow(canvas: HTMLCanvasElement) {
-    canvas.width = innerWidth
-    canvas.height = innerHeight - infoBarEl.clientHeight
+    let width = Math.min(maxWidth, innerWidth),
+        height = Math.min(maxHeight, innerHeight)
+    canvas.width = width
+    canvas.height = height
+    offSet.x = (innerWidth - width) / 2
+    offSet.y = (innerHeight - height) / 2
+    ctx = canvas.getContext('2d')
     topLeft = new Point(0, 0)
-    bottomRight = new Point(canvas.width, canvas.height)
-    center = new Point(canvas.width / 2, canvas.height / 2)
+    bottomRight = new Point(width, height)
+    center = new Point((width) / 2, (height) / 2)
+    backgroundParticles = new BackgroundParticles(topLeft, bottomRight, maxWidth, maxHeight)
 }
+sizeWindow(canvas)
+backgroundParticles.update(ctx, center)
 
 class Scene {
     constructor(

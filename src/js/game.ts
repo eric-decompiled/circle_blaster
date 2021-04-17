@@ -1,6 +1,6 @@
 import { Player, Projectile } from './models/player'
 import { PowerUp } from './models/powerups'
-import { BackgroundParticles, Particles } from './models/particles'
+import { Particles } from './models/particles'
 import { Circle, Color, Point } from './models/base'
 import { Keys, Mouse } from './input'
 import {
@@ -10,15 +10,17 @@ import {
     continueGameBtn,
     gameContinued,
     canvas,
+    ctx,
     topLeft,
     bottomRight,
     center,
     sizeWindow,
+    backgroundParticles,
+    offSet,
 } from './ui'
 import { initSpawnPoints, spawnBoss, spawnEnemies, spawnPowerUp } from './spawners'
 import { Enemy } from './models/enemies'
 
-const c = canvas.getContext('2d')
 // Sound FX
 const obtainPowerupAudio = new Audio('./audio/powerup.mp3')
 const maxShotsAudio = new Audio('./audio/cancel.mp3')
@@ -31,34 +33,31 @@ let powerUps: PowerUp[]
 let particles: Particles
 let enemies: any[]
 let projectiles: Projectile[]
-let backgroundParticles: BackgroundParticles
 let mouse: Mouse
 let keys: Keys
 let frame = 0
 let powerupTimeout = setTimeout(() => { }, 0) // let type inference do its thing
 
-backgroundParticles = new BackgroundParticles(topLeft, bottomRight)
-backgroundParticles.update(c, center)
 function init() {
-    mouse = new Mouse()
+    mouse = new Mouse(offSet)
     keys = new Keys()
     if (scene) {
         scene = new Scene(scene.bgMusic)
     } else {
         scene = new Scene()
     }
-    player = new Player(center, playerColor, keys)
+    player = new Player(center.clone(), playerColor, keys, mouse)
     projectiles = []
     particles = new Particles()
     enemies = []
     powerUps = []
-    initSpawnPoints(canvas.width, canvas.height)
+    initSpawnPoints(topLeft, bottomRight)
 }
 
 function animate() {
     animationId = requestAnimationFrame(animate)
-    c.fillStyle = 'rgba(0, 0, 0, 0.5)' // create motion blur effect
-    c.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillStyle = 'rgba(0, 0, 8, 0.5)' // create motion blur effect
+    ctx.fillRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y)
     frame++
     updateBackgroundParticles()
     updateEnemies()
@@ -66,12 +65,12 @@ function animate() {
     updatePowerups()
     updateProjectiles()
     updatePlayer()
-    handleSpawns()
+    // handleSpawns()
 }
 
 function handleSpawns() {
     if (frame % 32 === 0 && enemies.length === 0) spawnEnemies(enemies, 1, player.center, center)
-    if (frame % 1024 === 0) {
+    if (frame % 102 === 0) {
         scene.setLevel()
         spawnEnemies(enemies, scene.level, player.center, center)
         if (Math.random() < 0.25) spawnPowerUp(powerUps, center)
@@ -83,11 +82,11 @@ function handleSpawns() {
 }
 
 function updateParticles() {
-    particles.update(c)
+    particles.update(ctx)
 }
 
 function updatePlayer() {
-    player.update(c)
+    player.update(ctx)
     if (player.powerUp === 'Automatic' && mouse.down && frame % 12 === 0) {
         projectiles.push(player.shoot(mouse))
     }
@@ -100,7 +99,7 @@ function updateEnemies() {
         const dist = player.distanceBetween(enemy)
         // lose game if touching an enemy
         if (dist < 1) scene.endGame(animationId)
-        enemy.update(c)
+        enemy.update(ctx)
         // check if enemy hit any projectiles
         projectiles.forEach((projectile) => {
             const dist = projectile.distanceBetween(enemy)
@@ -174,7 +173,7 @@ function removeEnemy(enemy: Enemy) {
 }
 
 function updateBackgroundParticles() {
-    backgroundParticles.update(c, player.center)
+    backgroundParticles.update(ctx, player.center)
     // unlock player speed up if they touch enough dots
     if (backgroundParticles.litCount / backgroundParticles.count > 0.60 && !player.isUnleashed) {
         player.unleash()
@@ -191,7 +190,7 @@ function updateProjectiles() {
             particles.create(projectile.center, projectile.color, 6, Math.random() * Math.PI * 2)
             projectiles = projectiles.filter(p => p.id !== projectile.id)
         }, 0)
-        projectile.update(c)
+        projectile.update(ctx)
     })
 }
 
@@ -209,7 +208,7 @@ function updatePowerups() {
                 player.color = playerColor
             }, 5000)
         } else {
-            powerUp.update(c)
+            powerUp.update(ctx)
         }
         if (powerUp.inPlay) {
             resolveWallCollisions(powerUp)
@@ -219,36 +218,37 @@ function updatePowerups() {
     })
 }
 
-function hitXWall(c: Circle): boolean {
-    return c.center.x - c.radius + c.velocity.x <= topLeft.x ||
-        c.center.x + c.radius + c.velocity.x >= bottomRight.x
+function hitXWall(ctx: Circle): boolean {
+    return ctx.center.x - ctx.radius + ctx.velocity.x <= topLeft.x ||
+        ctx.center.x + ctx.radius + ctx.velocity.x >= bottomRight.x
 }
 
-function hitYWall(c: Circle): boolean {
-    return c.center.y - c.radius + c.velocity.y < topLeft.y ||
-        c.center.y + c.radius + c.velocity.y > bottomRight.y
+function hitYWall(ctx: Circle): boolean {
+    return ctx.center.y - ctx.radius + ctx.velocity.y < topLeft.y ||
+        ctx.center.y + ctx.radius + ctx.velocity.y > bottomRight.y
 }
 
-function resolveWallCollisions(c: Circle): boolean {
-    const hitX = hitXWall(c)
-    const hitY = hitYWall(c)
+function resolveWallCollisions(ctx: Circle): boolean {
+    const hitX = hitXWall(ctx)
+    const hitY = hitYWall(ctx)
     if (hitX) {
-        if (c.velocity.x > 0) {
-            c.center.x = canvas.width - c.radius
+        // ensure enemies dont merge into the wall by adjusting their position
+        if (ctx.velocity.x > 0) {
+            ctx.center.x = bottomRight.x - ctx.radius
         } else {
-            c.center.x = 0 + c.radius
+            ctx.center.x = topLeft.x + ctx.radius
         }
-        c.velocity.x = -c.velocity.x
-        c.collisions++
+        ctx.velocity.x = -ctx.velocity.x
+        ctx.collisions++
     }
     if (hitY) {
-        if (c.velocity.y > 0) {
-            c.center.y = canvas.height - c.radius
+        if (ctx.velocity.y > 0) {
+            ctx.center.y = bottomRight.y - ctx.radius
         } else {
-            c.center.y = 0 + c.radius
+            ctx.center.y = topLeft.y + ctx.radius
         }
-        c.velocity.y = -c.velocity.y
-        c.collisions++
+        ctx.velocity.y = -ctx.velocity.y
+        ctx.collisions++
     }
     return hitX || hitY
 }
@@ -260,7 +260,8 @@ startGameBtn.addEventListener('click', (event) => {
     animate()
 })
 
-continueGameBtn.addEventListener('click', () => {
+continueGameBtn.addEventListener('click', (event) => {
+    event.stopPropagation()
     gameContinued(scene)
     animate()
 })
@@ -270,12 +271,23 @@ addEventListener('resize', () => {
     sizeWindow(canvas)
 })
 
-addEventListener('click', () => {
+function shoot() {
     if (scene && scene.active) {
         if (projectiles.length < player.maxShots) {
             projectiles.push(player.shoot(mouse))
         } else {
             maxShotsAudio.play()
         }
+    }
+}
+addEventListener('click', shoot)
+addEventListener('keydown', ({ code, repeat }) => {
+    if (repeat) return
+    switch (code) {
+        case 'Enter':
+        case 'ShiftLeft':
+        case 'ShiftRight':
+        case 'NumpadEnter':
+            shoot()
     }
 })

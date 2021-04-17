@@ -26,7 +26,7 @@ class Enemy extends Circle {
             2 * (radius + level * 10),
             randomColor(),
         )
-        this.ttl = 75
+        this.ttl = 150
         this.friction = 0.997
         this.target = target
         this.points = 200 + level * 50
@@ -60,8 +60,8 @@ class HomingEnemy extends Enemy {
     update(c: CanvasRenderingContext2D) {
         this.draw(c)
         const angle = this.center.angleTo(this.target)
-        this.velocity.x += Math.cos(angle) * 0.16 * this.baseSpeed
-        this.velocity.y += Math.sin(angle) * 0.16 * this.baseSpeed
+        this.velocity.x += Math.cos(angle) * this.baseSpeed * .12
+        this.velocity.y += Math.sin(angle) * this.baseSpeed * .12
         this.velocity.x *= 0.96
         this.velocity.y *= 0.96
         this.center.x += this.velocity.x
@@ -75,7 +75,7 @@ class OscilatingEnemy extends Enemy {
         super(spawn, target, level)
         this.drive = new Velocity(this.velocity.x, this.velocity.y)
         this.border = new Color(258, 40, 60)
-        this.baseSpeed = 1.50 + 0.10 * level
+        this.baseSpeed = 1.25 + 0.10 * level
     }
     update(c: CanvasRenderingContext2D) {
         this.draw(c)

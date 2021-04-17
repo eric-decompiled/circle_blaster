@@ -29,6 +29,8 @@ export class Velocity {
 
     get speed(): number { return Math.hypot(this.x, this.y) }
 
+    get direction(): number { return Math.atan2(this.y, this.x) }
+
     public throttle(limit: number) {
         if (this.speed > limit) {
             const direction = Math.atan2(this.y, this.x)
@@ -51,10 +53,10 @@ export class Color {
 }
 
 const colors = [
-    new Color(1, 70, 30),
-    new Color(90, 70, 30),
-    new Color(220, 70, 30),
-    new Color(36, 70, 30),
+    new Color(1, 70, 60),
+    new Color(90, 70, 60),
+    new Color(220, 70, 60),
+    new Color(36, 70, 60),
 ]
 export const randomColor = () => colors[Math.floor((Math.random() * colors.length))]
 

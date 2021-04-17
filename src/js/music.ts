@@ -40,7 +40,7 @@ class BackgroundMusic {
         }
         this.audio.pause()
         this.audio.load()
-        this.audio.play()
+        // this.audio.play()
     }
 
     get isBossMusic(): boolean {
@@ -67,6 +67,5 @@ class BackgroundMusic {
                 this.setSong(albatrossSongURL)
                 break
         }
-        console.debug(path, ' now playing: ', this.audio.src)
     }
 }

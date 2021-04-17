@@ -33,18 +33,28 @@ class Particles {
     }
 }
 
-const spacing = 30
 const aura = 125
 const hideAura = 70
+const minSpace = 50
 class BackgroundParticles {
     private particles: BackgroundParticle[]
     private lit: number
-    constructor(topLeft: Point, bottomRight: Point) {
+    constructor(topLeft: Point, bottomRight: Point, maxWidth: number, maxHeight: number) {
         this.particles = []
         this.lit = 0
-        for (var i = topLeft.x; i < bottomRight.x; i += spacing) {
-            for (let j = topLeft.y; j < bottomRight.y; j += spacing) {
-                this.particles.push(new BackgroundParticle(new Point(i, j), 3, new Color(0, 0, 100)))
+        const width = bottomRight.x - topLeft.x
+        const height = bottomRight.y - topLeft.y
+        let isMaxWidth = (width >= maxWidth)
+        let isMaxHeight = (height >= maxHeight)
+        let space = Math.max(30, gcd(width, height))
+        while (space > minSpace) space *= 0.5
+        for (var i = topLeft.x; i <= bottomRight.x; i += space) {
+            for (let j = topLeft.y; j <= bottomRight.y; j += space) {
+                let isBorder =
+                    (isMaxWidth && (i === 0 || i === bottomRight.x)) ||
+                    (isMaxHeight && (j === 0 || j === bottomRight.y))
+                let p = new BackgroundParticle(new Point(i, j), 3, new Color(0, 0, 100), isBorder)
+                this.particles.push(p)
             }
         }
     }
@@ -136,7 +146,8 @@ class BackgroundParticle extends Circle {
     constructor(
         center: Point,
         radius: number,
-        color: Color
+        color: Color,
+        private isBorder: Boolean,
     ) {
         super(
             center,
@@ -151,7 +162,7 @@ class BackgroundParticle extends Circle {
 
     update(c: CanvasRenderingContext2D) {
         c.save()
-        c.globalAlpha = this.alpha
+        c.globalAlpha = this.alpha + (this.isBorder ? 0.15 : 0)
         this.draw(c)
         c.restore()
         // shimmer effect
@@ -168,4 +179,16 @@ class BackgroundParticle extends Circle {
         this.touched = true
         this.alpha = this.shimmerAlpha
     }
+}
+
+// helper for tiling
+function gcd(x, y) {
+    x = Math.abs(x);
+    y = Math.abs(y);
+    while (y) {
+        var t = y;
+        y = x % y;
+        x = t;
+    }
+    return x;
 }

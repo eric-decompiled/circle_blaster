@@ -56,22 +56,23 @@ export class Keys {
 }
 
 export class Mouse {
+    moveDelay = setTimeout(() => { }, 0)
     constructor(
+        private offSet: Point,
         public down = false,
-        public point = new Point(undefined, undefined)
+        public point = new Point(undefined, undefined),
     ) {
-        addEventListener('mousedown', ({ clientX, clientY }) => {
-            this.down = true
-            this.point.x = clientX
-            this.point.y = clientY
+        window.addEventListener('mousedown', (event) => {
+            this.moveDelay = setTimeout(() => this.down = true, 75)
         })
 
         addEventListener('mousemove', ({ clientX, clientY }) => {
-            this.point.x = clientX
-            this.point.y = clientY
+            this.point.x = clientX - this.offSet.x
+            this.point.y = clientY - this.offSet.y
         })
 
         addEventListener('mouseup', () => {
+            clearTimeout(this.moveDelay)
             this.down = false
         })
 
