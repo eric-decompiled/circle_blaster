@@ -24,6 +24,7 @@ import { Enemy } from './models/enemies'
 // Sound FX
 const obtainPowerupAudio = new Audio('./audio/powerup.mp3')
 const maxShotsAudio = new Audio('./audio/cancel.mp3')
+const wallBounceAudioURL = './audio/wall.mp3'
 
 const playerColor = new Color(0, 0, 100)
 let scene: Scene
@@ -46,7 +47,7 @@ function init() {
     } else {
         scene = new Scene()
     }
-    player = new Player(center.clone(), playerColor, keys, mouse)
+    player = new Player(center.clone(), playerColor, keys)
     projectiles = []
     particles = new Particles()
     enemies = []
@@ -54,26 +55,36 @@ function init() {
     initSpawnPoints(topLeft, bottomRight)
 }
 
+let fpsTarget = 1000 / 30,
+    then = Date.now(),
+    now: number,
+    elapsed: number
 function animate() {
     animationId = requestAnimationFrame(animate)
-    ctx.fillStyle = 'rgba(0, 0, 8, 0.5)' // create motion blur effect
-    ctx.fillRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y)
-    frame++
-    updateBackgroundParticles()
-    updateEnemies()
-    updateParticles()
-    updatePowerups()
-    updateProjectiles()
-    updatePlayer()
-    // handleSpawns()
+    now = Date.now()
+    elapsed = now - then
+    if (elapsed > fpsTarget) {
+        ctx.fillStyle = 'rgba(0, 0, 8, 0.5)' // create motion blur effect
+        ctx.fillRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y)
+        frame++
+        updateBackgroundParticles()
+        updateEnemies()
+        updateParticles()
+        updatePowerups()
+        updateProjectiles()
+        updatePlayer()
+        handleSpawns()
+    }
 }
 
 function handleSpawns() {
+    // disabled for now
+    // if (Math.random() < 0.25) spawnPowerUp(powerUps, center)
+
     if (frame % 32 === 0 && enemies.length === 0) spawnEnemies(enemies, 1, player.center, center)
-    if (frame % 102 === 0) {
+    if (frame % 1024 === 0) {
         scene.setLevel()
         spawnEnemies(enemies, scene.level, player.center, center)
-        if (Math.random() < 0.25) spawnPowerUp(powerUps, center)
         if (!scene.boss && scene.level >= 5) {
             let b = spawnBoss(enemies, scene, player.center)
             setTimeout(() => enemies.push(b), 11000)
@@ -87,9 +98,6 @@ function updateParticles() {
 
 function updatePlayer() {
     player.update(ctx)
-    if (player.powerUp === 'Automatic' && mouse.down && frame % 12 === 0) {
-        projectiles.push(player.shoot(mouse))
-    }
     resolveWallCollisions(player)
 }
 
@@ -232,6 +240,9 @@ function resolveWallCollisions(ctx: Circle): boolean {
     const hitX = hitXWall(ctx)
     const hitY = hitYWall(ctx)
     if (hitX) {
+        let sound = new Audio(wallBounceAudioURL)
+        sound.volume = 0.25
+        sound.play()
         // ensure enemies dont merge into the wall by adjusting their position
         if (ctx.velocity.x > 0) {
             ctx.center.x = bottomRight.x - ctx.radius
@@ -242,6 +253,9 @@ function resolveWallCollisions(ctx: Circle): boolean {
         ctx.collisions++
     }
     if (hitY) {
+        let sound = new Audio(wallBounceAudioURL)
+        sound.volume = 0.25
+        sound.play()
         if (ctx.velocity.y > 0) {
             ctx.center.y = bottomRight.y - ctx.radius
         } else {
@@ -271,16 +285,16 @@ addEventListener('resize', () => {
     sizeWindow(canvas)
 })
 
-function shoot() {
+function shoot(isEnter: boolean) {
     if (scene && scene.active) {
         if (projectiles.length < player.maxShots) {
-            projectiles.push(player.shoot(mouse))
+            projectiles.push(player.shoot(mouse, isEnter))
         } else {
             maxShotsAudio.play()
         }
     }
 }
-addEventListener('click', shoot)
+addEventListener('mousedown', () => shoot(false))
 addEventListener('keydown', ({ code, repeat }) => {
     if (repeat) return
     switch (code) {
@@ -288,6 +302,6 @@ addEventListener('keydown', ({ code, repeat }) => {
         case 'ShiftLeft':
         case 'ShiftRight':
         case 'NumpadEnter':
-            shoot()
+            shoot(true)
     }
 })

@@ -56,14 +56,13 @@ export class Keys {
 }
 
 export class Mouse {
-    moveDelay = setTimeout(() => { }, 0)
     constructor(
         private offSet: Point,
         public down = false,
         public point = new Point(undefined, undefined),
     ) {
         window.addEventListener('mousedown', (event) => {
-            this.moveDelay = setTimeout(() => this.down = true, 75)
+            this.down = true
         })
 
         addEventListener('mousemove', ({ clientX, clientY }) => {
@@ -72,7 +71,6 @@ export class Mouse {
         })
 
         addEventListener('mouseup', () => {
-            clearTimeout(this.moveDelay)
             this.down = false
         })
 

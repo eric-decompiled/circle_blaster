@@ -1,6 +1,6 @@
 import gsap from 'gsap'
 import { Point } from "./models/base"
-import { Boss, Enemy, HomingEnemy, OscilatingEnemy } from "./models/enemies"
+import { Boss, Enemy, HomingEnemy, OscilatingEnemy, SpinningEnemy } from "./models/enemies"
 import { PowerUp } from "./models/powerups"
 import { Scene } from "./ui"
 import { bossMusicURL } from './music'
@@ -26,9 +26,12 @@ const spawnEnemy = (enemies: Enemy[], level: number, target: Point, center: Poin
     let e: Enemy
     if (Math.random() < 0.30) {
         e = new HomingEnemy(randomSpawnPoint(), target, level)
-    } else if (Math.random() < 0.20) {
+    } else if (level > 1 && Math.random() < 0.20) {
         e = new OscilatingEnemy(randomSpawnPoint(), target, level)
-    } else {
+    } else if (level > 2 && Math.random() < 0.1) {
+        e = new SpinningEnemy(randomSpawnPoint(), target, level)
+    }
+    else {
         e = new Enemy(randomSpawnPoint(), center, level)
     }
     enemies.push(e)

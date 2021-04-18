@@ -11,12 +11,13 @@ class Player extends Circle {
     private power: number
     private shotSpeed: number
     public maxShots: number
+    // draw direction if player used enter to fire
+    private drawDirection: boolean
 
     constructor(
         spawnAt: Point,
         color: Color,
         private keys: Keys,
-        private mouse: Mouse,
     ) {
         super(
             spawnAt,
@@ -28,8 +29,9 @@ class Player extends Circle {
         this.speed = 0.55
         this.shotSpeed = 14
         this.power = 12
-        this.maxShots = 98
+        this.maxShots = 10
         this.unleashed = false
+        this.drawDirection = false
     }
 
     get isUnleashed(): boolean {
@@ -46,8 +48,8 @@ class Player extends Circle {
             c.strokeStyle = this.border.toString()
             c.stroke()
         }
-        // draw direction arrow
-        if (this.velocity.speed > 0) {
+
+        if (this.drawDirection) {
             const d = this.velocity.direction
             let tip = new Point(
                 this.center.x + Math.cos(d) * this.radius * 2.8,
@@ -67,8 +69,14 @@ class Player extends Circle {
         this.border = color
     }
 
-    shoot(mouse: Mouse) {
-        const angle = this.velocity.direction
+    shoot(mouse: Mouse, enterFire: boolean) {
+        let angle = this.center.angleTo(mouse.point)
+        if (enterFire) {
+            angle = this.velocity.direction
+            this.drawDirection = true
+        } else {
+            this.drawDirection = false
+        }
         const velocity = new Velocity(
             Math.cos(angle) * this.shotSpeed,
             Math.sin(angle) * this.shotSpeed
@@ -85,18 +93,11 @@ class Player extends Circle {
 
     update(c: CanvasRenderingContext2D) {
         this.draw(c)
-        if (this.mouse.down) {
-            const angle = this.center.angleTo(this.mouse.point)
-            if (this.center.distanceTo(this.mouse.point) > 32) {
-                this.velocity.x += Math.cos(angle) * this.speed
-                this.velocity.y += Math.sin(angle) * this.speed
-            }
-        } else {
-            if (this.keys.up) this.velocity.y -= this.speed
-            if (this.keys.down) this.velocity.y += this.speed
-            if (this.keys.right) this.velocity.x += this.speed
-            if (this.keys.left) this.velocity.x -= this.speed
-        }
+        if (this.keys.up) this.velocity.y -= this.speed
+        if (this.keys.down) this.velocity.y += this.speed
+        if (this.keys.right) this.velocity.x += this.speed
+        if (this.keys.left) this.velocity.x -= this.speed
+
         this.center.x += this.velocity.x
         this.center.y += this.velocity.y
         this.velocity.x *= this.friction

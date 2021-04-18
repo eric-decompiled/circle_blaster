@@ -40,7 +40,7 @@ class BackgroundMusic {
         }
         this.audio.pause()
         this.audio.load()
-        // this.audio.play()
+        this.audio.play()
     }
 
     get isBossMusic(): boolean {

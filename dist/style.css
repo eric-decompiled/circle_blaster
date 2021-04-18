@@ -544,10 +544,6 @@ video {
   display: block;
 }
 
-.inline {
-  display: inline;
-}
-
 .flex {
   display: flex;
 }
@@ -625,17 +621,8 @@ video {
   margin-bottom: 1rem;
 }
 
-.max-h-3 {
-  max-height: 0.75rem;
-}
-
 .max-w-md {
   max-width: 28rem;
-}
-
-.object-scale-down {
-  -o-object-fit: scale-down;
-     object-fit: scale-down;
 }
 
 .focus\:outline-none:focus {

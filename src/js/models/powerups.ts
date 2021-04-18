@@ -13,13 +13,14 @@ class PowerUp extends Circle {
     public velocity: Velocity
     public inPlay: boolean
     constructor(spawnPoint: Point, target: Point) {
-        super(spawnPoint, (14 + 19) / 2, randomColor() )
+        super(spawnPoint, (14 + 19) / 2, randomColor())
         const angle = Math.atan2(target.y / 2 - this.center.y, target.x - this.center.x)
         this.velocity = new Velocity(
             Math.cos(angle) + Math.random(),
             Math.sin(angle) + Math.random()
         )
         this.inPlay = false
+        this.friction = 1
     }
 
     draw(c: CanvasRenderingContext2D) {

@@ -3,6 +3,7 @@ export {
     Enemy,
     HomingEnemy,
     OscilatingEnemy,
+    SpinningEnemy,
     Boss
 }
 
@@ -66,6 +67,41 @@ class HomingEnemy extends Enemy {
         this.velocity.y *= 0.96
         this.center.x += this.velocity.x
         this.center.y += this.velocity.y
+    }
+}
+
+class SpinningEnemy extends Enemy {
+    private radians: number
+    private spinRate: number
+    constructor(spawn: Point, target: Point, level: number) {
+        super(spawn, target, level)
+        this.spinRate = 0.0275
+        this.border = new Color(168, 40, 60)
+        const angle = this.center.angleTo(this.target)
+        this.velocity.x += Math.cos(angle) * this.baseSpeed * 2.5
+        this.velocity.y += Math.sin(angle) * this.baseSpeed * 2.5
+        this.radians = angle
+    }
+
+    update(c: CanvasRenderingContext2D) {
+        this.draw(c)
+        this.velocity.x += Math.cos(this.radians) * 0.25
+        this.velocity.y += Math.sin(this.radians) * 0.25
+        // also home into player
+        const angle = this.center.angleTo(this.target)
+        this.velocity.x += Math.cos(angle) * this.baseSpeed * .1
+        this.velocity.y += Math.sin(angle) * this.baseSpeed * .1
+        this.velocity.x *= 0.94
+        this.velocity.y *= 0.94
+        this.center.x += this.velocity.x
+        this.center.y += this.velocity.y
+        this.radians += this.spinRate
+    }
+
+    collide() {
+        this.radians += Math.PI
+        this.velocity.x *= 1.2
+        this.velocity.x *= 1.2
     }
 }
 
