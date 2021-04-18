@@ -2,6 +2,7 @@ import gsap from 'gsap'
 import { Point, Color } from "./models/base"
 import { BackgroundParticles } from './models/particles'
 import { BackgroundMusic, defaultSong, victoryMusicURL } from "./music"
+import { playEndGameSound, playStartGameSound, playWinGameSound } from './sounds'
 
 export {
     canvas,
@@ -22,8 +23,6 @@ export {
     maxHeight
 }
 
-const endGameAudio = new Audio('./audio/altEnd.mp3')
-const winGameAudio = new Audio('/audio/activation.mp3')
 const infoBarEl = document.querySelector('#infoBar')
 const startGameBtn = document.querySelector('#startGameBtn') as HTMLElement
 const continueGameBtn = document.querySelector('#continueGameBtn') as HTMLElement
@@ -33,7 +32,6 @@ const modalEl = document.querySelector('#modalEl') as HTMLElement
 const bigScoreEl = document.querySelector('#bigScoreEl')
 const runtimeEl = document.querySelector('#timeEl')
 const victoryEl = document.querySelector('#victoryEl') as HTMLElement
-const startGameAudio = new Audio('./audio/start.mp3')
 
 const canvas = document.querySelector('canvas')
 canvas.width = innerWidth
@@ -110,14 +108,14 @@ class Scene {
     winGame(animationId: number) {
         cancelAnimationFrame(animationId)
         this.active = false
-        winGameAudio.play()
+        playWinGameSound()
         this.bgMusic.setSong(victoryMusicURL)
         displayVictoryModal(this.stats())
     }
 
     endGame(animationId: number) {
         cancelAnimationFrame(animationId)
-        endGameAudio.play()
+        playEndGameSound()
         this.active = false
         displayStartModal(this.score)
     }
@@ -185,7 +183,7 @@ const displayStartModal = (score: number) => {
 
 const gameStarted = (scene: Scene) => {
     scene.active = true
-    startGameAudio.play()
+    playStartGameSound()
     scoreEl.innerHTML = '0'
     levelEl.innerHTML = '1'
     dismissModal()

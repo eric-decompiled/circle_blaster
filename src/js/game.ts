@@ -20,11 +20,7 @@ import {
 } from './ui'
 import { initSpawnPoints, spawnBoss, spawnEnemies, spawnPowerUp } from './spawners'
 import { Enemy } from './models/enemies'
-
-// Sound FX
-const obtainPowerupAudio = new Audio('./audio/powerup.mp3')
-const maxShotsAudio = new Audio('./audio/cancel.mp3')
-const wallBounceAudioURL = './audio/wall.mp3'
+import { playBounceSound, playNoAmmoSound, playPowerUpSound } from './sounds'
 
 const playerColor = new Color(0, 0, 100)
 let scene: Scene
@@ -78,11 +74,11 @@ function animate() {
 }
 
 function handleSpawns() {
-    // disabled for now
-    // if (Math.random() < 0.25) spawnPowerUp(powerUps, center)
 
     if (frame % 32 === 0 && enemies.length === 0) spawnEnemies(enemies, 1, player.center, center)
     if (frame % 1024 === 0) {
+        // if (Math.random() < 0.25) spawnPowerUp(powerUps, center)
+
         scene.setLevel()
         spawnEnemies(enemies, scene.level, player.center, center)
         if (!scene.boss && scene.level >= 5) {
@@ -205,7 +201,7 @@ function updateProjectiles() {
 function updatePowerups() {
     powerUps.forEach((powerUp, index) => {
         if (powerUp.distanceBetween(player) < 1) {
-            obtainPowerupAudio.play()
+            playPowerUpSound()
             clearTimeout(powerupTimeout)
             player.powerUp = 'Automatic'
             player.setborder(new Color(46, 65, 52))
@@ -240,9 +236,7 @@ function resolveWallCollisions(ctx: Circle): boolean {
     const hitX = hitXWall(ctx)
     const hitY = hitYWall(ctx)
     if (hitX) {
-        let sound = new Audio(wallBounceAudioURL)
-        sound.volume = 0.25
-        sound.play()
+        playBounceSound()
         // ensure enemies dont merge into the wall by adjusting their position
         if (ctx.velocity.x > 0) {
             ctx.center.x = bottomRight.x - ctx.radius
@@ -253,9 +247,7 @@ function resolveWallCollisions(ctx: Circle): boolean {
         ctx.collisions++
     }
     if (hitY) {
-        let sound = new Audio(wallBounceAudioURL)
-        sound.volume = 0.25
-        sound.play()
+        playBounceSound()
         if (ctx.velocity.y > 0) {
             ctx.center.y = bottomRight.y - ctx.radius
         } else {
@@ -283,6 +275,7 @@ continueGameBtn.addEventListener('click', (event) => {
 
 addEventListener('resize', () => {
     sizeWindow(canvas)
+    initSpawnPoints(topLeft, bottomRight)
 })
 
 function shoot(isEnter: boolean) {
@@ -290,10 +283,11 @@ function shoot(isEnter: boolean) {
         if (projectiles.length < player.maxShots) {
             projectiles.push(player.shoot(mouse, isEnter))
         } else {
-            maxShotsAudio.play()
+            playNoAmmoSound()
         }
     }
 }
+
 addEventListener('mousedown', () => shoot(false))
 addEventListener('keydown', ({ code, repeat }) => {
     if (repeat) return

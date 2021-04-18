@@ -1,7 +1,6 @@
 import { Circle, Point, Velocity, Color } from './base'
 import { Mouse, Keys } from '../input'
-const shootAudio = new Audio('./audio/altShoot.mp3')
-const unleashedAudio = new Audio('./audio/unlock.mp3')
+import { playShootSound, playUnleashSound } from '../sounds'
 export { Player, Projectile }
 const playerRadius = 10
 class Player extends Circle {
@@ -81,9 +80,7 @@ class Player extends Circle {
             Math.cos(angle) * this.shotSpeed,
             Math.sin(angle) * this.shotSpeed
         )
-        let s = shootAudio.cloneNode() as HTMLAudioElement
-        s.volume = 0.5
-        s.play()
+        playShootSound()
         const spawnAt = new Point(
             this.center.x + velocity.x,
             this.center.y + velocity.y
@@ -109,7 +106,7 @@ class Player extends Circle {
             this.speed += 0.15
             this.shotSpeed += 2
             this.maxShots += 8
-            unleashedAudio.play()
+            playUnleashSound()
             this.unleashed = true
         }
     }

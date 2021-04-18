@@ -1,4 +1,5 @@
 import { Circle, Point, Velocity, randomColor, Color } from './base'
+import { playDestroySound, playHitSound } from '../sounds'
 export {
     Enemy,
     HomingEnemy,
@@ -8,10 +9,6 @@ export {
 }
 
 const minEnemySize = 16
-const enemyHitAudio = new Audio('./audio/hit.mp3')
-const enemyDestroyedAudio = new Audio('./audio/destroy.mp3')
-enemyDestroyedAudio.volume = 0.33
-
 class Enemy extends Circle {
     public id: number
     public points: number
@@ -41,12 +38,10 @@ class Enemy extends Circle {
     }
 
     hit(amount: number): boolean {
-        const hitSound = enemyHitAudio.cloneNode() as HTMLAudioElement
-        hitSound.volume = 0.33
-        hitSound.play()
+        playHitSound()
         this.radius -= amount
         const destroyed = this.radius < minEnemySize
-        if (destroyed) enemyDestroyedAudio.play()
+        if (destroyed) playDestroySound()
         return destroyed
     }
 
@@ -168,12 +163,10 @@ class Boss extends Enemy {
     }
 
     hit(amount: number) {
-        const hitSound = enemyHitAudio.cloneNode() as HTMLAudioElement
-        hitSound.volume = 0.4
-        hitSound.play()
-        this.radius -= 1
+        playHitSound()
+        this.radius -= 10
         const destroyed = this.radius < minEnemySize
-        if (destroyed) enemyDestroyedAudio.play()
+        if (destroyed) playDestroySound()
         return destroyed
     }
 }
