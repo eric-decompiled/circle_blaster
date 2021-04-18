@@ -235,29 +235,29 @@ function hitYWall(ctx: Circle): boolean {
         ctx.center.y + ctx.radius + ctx.velocity.y > bottomRight.y
 }
 
-function resolveWallCollisions(ctx: Circle): boolean {
-    const hitX = hitXWall(ctx)
-    const hitY = hitYWall(ctx)
+function resolveWallCollisions(c: Circle): boolean {
+    const hitX = hitXWall(c)
+    const hitY = hitYWall(c)
     if (hitX) {
-        playBounceSound()
+        if (!(c instanceof Projectile)) playBounceSound()
         // ensure enemies dont merge into the wall by adjusting their position
-        if (ctx.velocity.x > 0) {
-            ctx.center.x = bottomRight.x - ctx.radius
+        if (c.velocity.x > 0) {
+            c.center.x = bottomRight.x - c.radius
         } else {
-            ctx.center.x = topLeft.x + ctx.radius
+            c.center.x = topLeft.x + c.radius
         }
-        ctx.velocity.x = -ctx.velocity.x
-        ctx.collisions++
+        c.velocity.x = -c.velocity.x
+        c.collisions++
     }
     if (hitY) {
-        playBounceSound()
-        if (ctx.velocity.y > 0) {
-            ctx.center.y = bottomRight.y - ctx.radius
+        if (!(c instanceof Projectile)) playBounceSound()
+        if (c.velocity.y > 0) {
+            c.center.y = bottomRight.y - c.radius
         } else {
-            ctx.center.y = topLeft.y + ctx.radius
+            c.center.y = topLeft.y + c.radius
         }
-        ctx.velocity.y = -ctx.velocity.y
-        ctx.collisions++
+        c.velocity.y = -c.velocity.y
+        c.collisions++
     }
     return hitX || hitY
 }
