@@ -24,7 +24,7 @@ const spawnEnemies = (enemies: Enemy[], level: number, target: Point, center: Po
 
 const spawnEnemy = (enemies: Enemy[], level: number, target: Point, center: Point) => {
     let e: Enemy
-    if (Math.random() < 0.30) {
+    if (Math.random() < 0.35) {
         e = new HomingEnemy(randomSpawnPoint(), target, level)
     } else if (level > 1 && Math.random() < 0.20) {
         e = new OscilatingEnemy(randomSpawnPoint(), target, level)
@@ -79,6 +79,7 @@ function initSpawnPoints(topLeft: Point, bottomRight: Point) {
 }
 
 function spawnPowerUp(powerUps: PowerUp[], target: Point) {
+    console.log('spwnin power')
     powerUps.push(new PowerUp(randomSpawnPoint(), target))
 }
 

@@ -25,8 +25,8 @@ class Player extends Circle {
         )
         this.powerUp = ''
         this.friction = 0.90
-        this.speed = 0.55
-        this.shotSpeed = 14
+        this.speed = 1.0
+        this.shotSpeed = 20
         this.power = 12
         this.maxShots = 10
         this.unleashed = false
@@ -115,7 +115,7 @@ class Player extends Circle {
         if (this.unleashed) {
             this.speed -= 0.15
             this.shotSpeed -= 2
-            this.maxShots -= 7
+            this.maxShots -= 8
             this.unleashed = false
         }
     }

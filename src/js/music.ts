@@ -13,7 +13,7 @@ const volumes = {
     [movingMiamiSongURL]: 0.4,
     [inCloudsSongURL]: 0.33,
     [bossMusicURL]: 1.0,
-    [victoryMusicURL]: 1.0
+    [victoryMusicURL]: 0.66,
 }
 
 export { BackgroundMusic }

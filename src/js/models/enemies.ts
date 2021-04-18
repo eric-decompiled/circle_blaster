@@ -28,7 +28,7 @@ class Enemy extends Circle {
         this.friction = 0.997
         this.target = target
         this.points = 200 + level * 50
-        this.baseSpeed = 0.85 + (Math.random() * 0.25)
+        this.baseSpeed = 1.25 + (Math.random() * 0.25)
         this.inPlay = false
         const angle = this.center.angleTo(target)
         this.velocity = new Velocity(
@@ -45,7 +45,7 @@ class Enemy extends Circle {
         return destroyed
     }
 
-    collide() { } // only used for oscilating enemy
+    collide() { } // some enemies change path when colliding
 }
 
 class HomingEnemy extends Enemy {
@@ -106,7 +106,7 @@ class OscilatingEnemy extends Enemy {
         super(spawn, target, level)
         this.drive = new Velocity(this.velocity.x, this.velocity.y)
         this.border = new Color(258, 40, 60)
-        this.baseSpeed = 1.25 + 0.10 * level
+        this.baseSpeed = 1.75 + 0.10 * level
     }
     update(c: CanvasRenderingContext2D) {
         this.draw(c)
@@ -140,7 +140,7 @@ class Boss extends Enemy {
             8
         )
         this.radius = Math.min(150, this.radius)
-        this.baseSpeed = 2.5
+        this.baseSpeed = 4.0
         this.points = 1000
         this.frame = 0
         this.isBoss = true
@@ -164,7 +164,7 @@ class Boss extends Enemy {
 
     hit(amount: number) {
         playHitSound()
-        this.radius -= 10
+        this.radius -= 1
         const destroyed = this.radius < minEnemySize
         if (destroyed) playDestroySound()
         return destroyed

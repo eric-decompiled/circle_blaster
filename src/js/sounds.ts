@@ -3,7 +3,7 @@ let ctx = new AudioContext()
 let sounds = {
     shoot: { url: './audio/shoot.mp3', gain: 0.5 },
     hit: { url: './audio/hit.mp3', gain: 0.33 },
-    destroy: { url: './audio/destroy.mp3', gain: 0.33 },
+    destroy: { url: './audio/break.mp3', gain: 0.33 },
     bounce: { url: './audio/bounce.mp3', gain: 0.33 },
     ammo: { url: './audio/no_ammo.mp3', gain: 0.66 },
     powerup: { url: './audio/powerup.mp3', gain: 0.66 },

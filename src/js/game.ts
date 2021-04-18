@@ -60,9 +60,10 @@ function animate() {
     now = Date.now()
     elapsed = now - then
     if (elapsed > fpsTarget) {
-        ctx.fillStyle = 'rgba(0, 0, 8, 0.5)' // create motion blur effect
-        ctx.fillRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y)
         frame++
+        then = now - (elapsed % fpsTarget)
+        ctx.fillStyle = 'rgba(0, 0, 8, 0.65)' // create motion blur effect
+        ctx.fillRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y)
         updateBackgroundParticles()
         updateEnemies()
         updateParticles()
@@ -74,10 +75,9 @@ function animate() {
 }
 
 function handleSpawns() {
-
     if (frame % 32 === 0 && enemies.length === 0) spawnEnemies(enemies, 1, player.center, center)
-    if (frame % 1024 === 0) {
-        // if (Math.random() < 0.25) spawnPowerUp(powerUps, center)
+    if (frame % 512 === 0) {
+        if (Math.random() < .25) spawnPowerUp(powerUps, center)
 
         scene.setLevel()
         spawnEnemies(enemies, scene.level, player.center, center)
@@ -94,6 +94,9 @@ function updateParticles() {
 
 function updatePlayer() {
     player.update(ctx)
+    if (player.powerUp === 'Automatic' && (mouse.down || keys.enter) && frame % 6 === 0) {
+        projectiles.push(player.shoot(mouse, !mouse.down))
+    }
     resolveWallCollisions(player)
 }
 
@@ -190,7 +193,7 @@ function updateProjectiles() {
         resolveWallCollisions(projectile)
 
         // remove projectiles that have bounced to many times
-        if (projectile.collisions > 4) setTimeout(() => {
+        if (projectile.collisions > 3) setTimeout(() => {
             particles.create(projectile.center, projectile.color, 6, Math.random() * Math.PI * 2)
             projectiles = projectiles.filter(p => p.id !== projectile.id)
         }, 0)
@@ -275,6 +278,7 @@ continueGameBtn.addEventListener('click', (event) => {
 
 addEventListener('resize', () => {
     sizeWindow(canvas)
+    if (player) player.leash()
     initSpawnPoints(topLeft, bottomRight)
 })
 
@@ -293,8 +297,6 @@ addEventListener('keydown', ({ code, repeat }) => {
     if (repeat) return
     switch (code) {
         case 'Enter':
-        case 'ShiftLeft':
-        case 'ShiftRight':
         case 'NumpadEnter':
             shoot(true)
     }

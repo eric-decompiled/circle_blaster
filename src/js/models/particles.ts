@@ -8,7 +8,7 @@ class Particles {
         this.particles = []
     }
 
-    create(at: Point, color: Color, amount: number, angle: number, speed = 1) {
+    create(at: Point, color: Color, amount: number, angle: number, speed = 2) {
         // angle determines the direction particles will shoot off in
         const xBias = Math.cos(angle) * 0.5
         const yBias = Math.sin(angle) * 0.5
@@ -68,8 +68,10 @@ class BackgroundParticles {
     }
 
     reset(color: Color) {
+        this.lit = 0
         this.particles.forEach(p => {
             p.color = color
+            p.touched = false
             gsap.to(p, {
                 alpha: 0.15,
                 duration: 0.03,
@@ -132,7 +134,7 @@ class Particle {
         this.center.y += this.velocity.y
         this.velocity.x *= this.friction
         this.velocity.y *= this.friction
-        this.alpha -= 0.01
+        this.alpha -= 0.02
         this.draw(c)
     }
 }

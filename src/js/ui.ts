@@ -128,8 +128,8 @@ const updateScore = (position: Point, points: number, currentScore: number) => {
     scoreLabel.style.position = 'absolute'
     scoreLabel.style.color = 'white'
     scoreLabel.style.userSelect = 'none'
-    scoreLabel.style.left = position.x + 'px'
-    scoreLabel.style.top = position.y + 'px'
+    scoreLabel.style.left = position.x + offSet.x + 'px'
+    scoreLabel.style.top = position.y + offSet.y + 'px'
     document.body.appendChild(scoreLabel)
     gsap.to(scoreLabel, {
         opacity: 0,

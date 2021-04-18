@@ -8,6 +8,7 @@ export class Keys {
         public down = false,
         public right = false,
         public left = false,
+        public enter = false
     ) {
         this.releaseTimes = {}
         addEventListener('keydown', ({ code }) => {
@@ -26,6 +27,9 @@ export class Keys {
                 case 'KeyD': case 'ArrowRight':
                     this.right = true
                     break
+                case 'Enter': case 'ShiftEnter':
+                    this.enter = true
+                    break
             }
         })
 
@@ -43,6 +47,9 @@ export class Keys {
                     break
                 case 'KeyD': case 'ArrowRight':
                     this.right = false
+                    break
+                case 'Enter': case 'ShiftEnter':
+                    this.enter = false
                     break
             }
         })
