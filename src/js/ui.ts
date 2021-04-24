@@ -3,6 +3,7 @@ import { Point, Color } from "./models/base"
 import { BackgroundParticles } from './models/particles'
 import { BackgroundMusic, defaultSong, victoryMusicURL } from "./music"
 import { playEndGameSound, playStartGameSound, playWinGameSound } from './sounds'
+import { Stats } from './stats'
 
 export {
     canvas,
@@ -16,13 +17,11 @@ export {
     sizeWindow,
     gameStarted,
     gameContinued,
-    infoBarEl,
     startGameBtn,
     continueGameBtn,
     maxWidth,
     maxHeight
 }
-
 const infoBarEl = document.querySelector('#infoBar')
 const startGameBtn = document.querySelector('#startGameBtn') as HTMLElement
 const continueGameBtn = document.querySelector('#continueGameBtn') as HTMLElement
@@ -37,6 +36,7 @@ const canvas = document.querySelector('canvas')
 canvas.width = innerWidth
 canvas.height = innerHeight - infoBarEl.clientHeight
 let ctx: CanvasRenderingContext2D
+const stats = new Stats(canvas.width, canvas.height)
 
 let topLeft: Point
 let bottomRight: Point
@@ -58,6 +58,7 @@ function sizeWindow(canvas: HTMLCanvasElement) {
     bottomRight = new Point(width, height)
     center = new Point((width) / 2, (height) / 2)
     backgroundParticles = new BackgroundParticles(topLeft, bottomRight, maxWidth, maxHeight)
+    stats.resize(width, height)
 }
 sizeWindow(canvas)
 backgroundParticles.update(ctx, center)
@@ -68,9 +69,8 @@ class Scene {
         public active = false,
         public boss = false,
         public color: Color = undefined,
-        public score = 0,
-        public level = 1,
         public startTime = Date.now(),
+        public level = stats.level
     ) {
         if (this.bgMusic.isBossMusic) {
             bgMusic.fade(2000)
@@ -78,31 +78,11 @@ class Scene {
         }
     }
 
-    setLevel() {
-        let score = this.score
-        if (score > 2500) this.level = 2
-        if (score > 5000) this.level = 3
-        if (score > 10000) this.level = 4
-        if (score > 15000) this.level = 5
-        if (score > 25000) this.level = 6
-        if (score > 50000) this.level = 7
-        if (score > 100000) this.level = 8
-        if (score > 150000) this.level = 9
-        updateLevel(this.level)
-    }
-
     addScore(position: Point, points: number) {
-        this.score += points
-        updateScore(position, points, this.score)
-    }
-
-    stats() {
-        const playTime = Date.now() - this.startTime
-        const playTimeString = `${new Date(playTime).toISOString().substr(14, 5)}`
-        return {
-            'score': this.score,
-            'playTime': playTimeString,
-        }
+        stats.addPoints(points)
+        updateScore(position, points, stats.score)
+        updateLevel(stats.level)
+        this.level = stats.level
     }
 
     winGame(animationId: number) {
@@ -110,14 +90,15 @@ class Scene {
         this.active = false
         playWinGameSound()
         this.bgMusic.setSong(victoryMusicURL)
-        displayVictoryModal(this.stats())
+        displayVictoryModal()
     }
 
     endGame(animationId: number) {
+        stats.endGame()
         cancelAnimationFrame(animationId)
         playEndGameSound()
         this.active = false
-        displayStartModal(this.score)
+        displayStartModal(stats.score)
     }
 }
 
@@ -141,7 +122,7 @@ const updateScore = (position: Point, points: number, currentScore: number) => {
     })
 }
 
-const displayVictoryModal = (stats) => {
+const displayVictoryModal = () => {
     bigScoreEl.innerHTML = stats.score.toString()
     modalEl.style.display = 'flex'
     victoryEl.style.display = 'block'
@@ -152,6 +133,7 @@ const displayVictoryModal = (stats) => {
     continueGameBtn.style.display = 'block'
     displayModal()
 }
+
 const dismissModal = () => {
     gsap.to(modalEl, {
         opacity: 0,
@@ -182,6 +164,7 @@ const displayStartModal = (score: number) => {
 }
 
 const gameStarted = (scene: Scene) => {
+    stats.startGame()
     scene.active = true
     playStartGameSound()
     scoreEl.innerHTML = '0'

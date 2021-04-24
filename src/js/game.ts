@@ -48,6 +48,7 @@ function init() {
     particles = new Particles()
     enemies = []
     powerUps = []
+    backgroundParticles.reset(player.color)
     initSpawnPoints(topLeft, bottomRight)
 }
 
@@ -79,7 +80,6 @@ function handleSpawns() {
     if (frame % 512 === 0) {
         if (Math.random() < .25) spawnPowerUp(powerUps, center)
 
-        scene.setLevel()
         spawnEnemies(enemies, scene.level, player.center, center)
         if (!scene.boss && scene.level >= 5) {
             let b = spawnBoss(enemies, scene, player.center)
@@ -274,7 +274,6 @@ continueGameBtn.addEventListener('click', (event) => {
     gameContinued(scene)
     animate()
 })
-
 
 addEventListener('resize', () => {
     sizeWindow(canvas)

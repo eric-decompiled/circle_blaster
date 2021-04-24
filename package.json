@@ -27,6 +27,7 @@
     "chai": "^4.3.4",
     "html-webpack-plugin": "^4.0.3",
     "mocha": "^8.3.2",
+    "node-fetch": "^2.6.1",
     "postcss": "^8.2.10",
     "prettier": "^2.0.2",
     "tailwindcss": "^2.1.1",

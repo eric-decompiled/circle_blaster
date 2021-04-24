@@ -1,5 +1,7 @@
 node_modules
 dist/js
-.ds_store
 dl
-.vscode
+todo.md
+
+# Local Netlify folder
+.netlify
