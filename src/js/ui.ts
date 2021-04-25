@@ -20,11 +20,13 @@ export {
     startGameBtn,
     continueGameBtn,
     maxWidth,
-    maxHeight
+    maxHeight,
+    updateAmmo,
 }
 const infoBarEl = document.querySelector('#infoBar')
 const startGameBtn = document.querySelector('#startGameBtn') as HTMLElement
 const continueGameBtn = document.querySelector('#continueGameBtn') as HTMLElement
+const ammoEl = document.querySelector('#ammoEl')
 const scoreEl = document.querySelector('#scoreEl')
 const levelEl = document.querySelector('#levelEl')
 const modalEl = document.querySelector('#modalEl') as HTMLElement
@@ -100,6 +102,10 @@ class Scene {
         this.active = false
         displayStartModal(stats.score)
     }
+}
+
+const updateAmmo = (amount: string) => {
+    ammoEl.innerHTML = amount
 }
 
 const updateScore = (position: Point, points: number, currentScore: number) => {

@@ -1,0 +1,3 @@
+Shots gain power when they bounce off of enemies.
+Power Ups never disappear. Save them for challenges.
+A border appears at 1920 × 1080 pixels, providing the most space to manouver.

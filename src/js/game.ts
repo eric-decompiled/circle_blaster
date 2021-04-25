@@ -17,6 +17,7 @@ import {
     sizeWindow,
     backgroundParticles,
     offSet,
+    updateAmmo,
 } from './ui'
 import { initSpawnPoints, spawnBoss, spawnEnemies, spawnPowerUp } from './spawners'
 import { Enemy } from './models/enemies'
@@ -72,6 +73,12 @@ function animate() {
         updateProjectiles()
         updatePlayer()
         handleSpawns()
+    }
+    if (player.powerUp === 'Automatic') {
+        updateAmmo('∞')
+    } else {
+        const count = Math.max(0, player.maxShots - projectiles.length)
+        updateAmmo(count.toString())
     }
 }
 
